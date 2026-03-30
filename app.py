@@ -36,7 +36,7 @@ except Exception as e:
     print(f"⚠️  Database initialization: {e}")
 
 # Get port from environment (Pterodactyl sets SERVER_PORT)
-port = os.environ.get("SERVER_PORT") or os.environ.get("PORT") or "25297"
+port = "25297"
 
 # Start FastAPI server from project root
 print(f"🚀 Starting Flashcard Hub API on port {port}...")
