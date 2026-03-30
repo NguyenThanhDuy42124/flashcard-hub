@@ -11,7 +11,7 @@
 
 ### ✨ RECOMMENDED: Direct Python with Script (2 minutes)
 
-**For Pterodactyl servers:**
+**For Pterodactyl servers - BEST APPROACH:**
 
 ```bash
 # 1. SSH into Pterodactyl server
@@ -21,20 +21,44 @@ ssh user@your-pterodactyl-host
 git clone https://github.com/NguyenThanhDuy42124/flashcard-hub.git
 cd flashcard-hub
 
-# 3. Make script executable
+# 3. Make script executable (IMPORTANT!)
 chmod +x deploy-pterodactyl.sh
 
-# 4. Run deployment script - this handles everything!
+# 4. Run deployment script - handles everything + fallbacks for errors!
 ./deploy-pterodactyl.sh
 ```
 
 **Script automatically:**
-- Updates pip ✓
-- Installs only pre-built wheels (NO Rust compile!) ✓
-- Creates database ✓
-- Starts server on :8000 ✓
+- ✅ Updates pip (critical for Python 3.14 wheel support!)
+- ✅ Clears pip cache (removes old/broken builds)
+- ✅ **Forces binary-only wheels (`--only-binary :all:`)**
+- ✅ Creates database
+- ✅ Starts server on :8000
+- ✅ **Auto-fallback if pydantic fails:** downgrades to 2.0.0 (guaranteed pre-built)
 
 **Result:** Server runs at `http://your-host:8000` ✓
+
+---
+
+### If Script Fails: Manual Fallback
+
+```bash
+# 1. SSH into server
+ssh user@your-pterodactyl-host
+cd flashcard-hub
+
+# 2. Clear everything
+pip cache purge
+
+# 3. Use pre-tested requirements (no Rust needed!)
+pip install --only-binary :all: --no-cache-dir -r requirements-wheels-only.txt
+
+# 4. Initialize database
+python3 app.py --init-db
+
+# 5. Start server (in another terminal)
+python3 app.py
+```
 
 ---
 
@@ -226,31 +250,55 @@ flashcard-hub/
 
 ### ❌ "Failed building wheel for pydantic-core" / "No space left on device"
 
-**Root Cause:** pip is trying to compile Rust (pydantic-core needs Rust on some platforms)
+**THIS IS THE MAIN ISSUE** - pip is compiling Rust (should NOT happen!)
 
-**Fix - Use pre-built wheels ONLY:**
+**Why?**
+- Pterodactyl has limited disk space
+- pydantic 2.5+ MUST compile Rust (no pre-built wheels)
+- Python 3.14 on some systems doesn't have pre-built pydantic wheels
+
+**Instant Fix - Use our script (handles automatically):**
 
 ```bash
-# Method 1: Copy pip config (BEST)
-cp pip.conf ~/.pip/pip.conf
-
-# Method 2: Or install with explicit flags
-pip install --prefer-binary --no-cache-dir -r requirements-prod.txt
-
-# Method 3: Or force binary-only wheels
-pip install --only-binary :all: -r requirements-prod.txt
-
-# Method 4: Clean cache and retry
-pip cache purge
-pip install --prefer-binary --no-cache-dir -r requirements-prod.txt
+chmod +x deploy-pterodactyl.sh
+./deploy-pterodactyl.sh  # Auto-fallback to pydantic 2.0.0
 ```
 
-**Key flags explanation:**
-- `--prefer-binary` = Use pre-built .whl files (NOT source)
-- `--no-cache-dir` = Don't cache temporary build files (saves disk!)
-- `--only-binary :all:` = ERROR if source package needed (forces pre-built)
+**Manual Fix - Step by step:**
 
-✅ **This avoids compiling Rust entirely!** ✨
+```bash
+# Step 1: Clear cache completely
+pip cache purge
+rm -rf ~/.cache/pip
+
+# Step 2: Force binary wheels, NO source builds
+pip install --only-binary :all: --no-cache-dir -r requirements-wheels-only.txt
+
+# Step 3: If STILL fails, install pydantic 2.0.0 specifically
+pip install --only-binary :all: 'pydantic==2.0.0'
+
+# Step 4: Then other packages
+pip install --only-binary :all: --no-cache-dir \
+  'fastapi==0.100.0' \
+  'uvicorn[standard]==0.24.0' \
+  'sqlalchemy==2.0.0'
+```
+
+**Key differences:**
+- `requirements-prod.txt` = flexible versions (may need compilation)
+- `requirements-wheels-only.txt` = pinned versions (100% pre-built wheels)
+
+**Pro tip:** If "No space left" appears:
+```bash
+# Clean Rust build cache
+rm -rf ~/.cargo/registry
+rm -rf ~/.rustup
+pip cache purge
+
+# Clear temp files
+rm -rf /tmp/pip*
+rm -rf /tmp/maturin*
+```
 
 ### ❌ "Cannot connect to Docker daemon"
 ```bash
@@ -325,7 +373,11 @@ python -c "import fastapi; print(fastapi.__version__)"
 
 - **app.py** - Main entry point (runs FastAPI with Uvicorn)
 - **backend/main.py** - FastAPI application configuration
-- **requirements-prod.txt** - Lightweight dependencies (no Rust compilation)
+- **requirements-prod.txt** - Flexible version ranges (attempts compilation if needed)
+- **requirements-wheels-only.txt** - PINNED versions (100% pre-built wheels, no Rust!)
+- **deploy-pterodactyl.sh** - Unix/Linux deployment script with fallbacks
+- **deploy-pterodactyl.bat** - Windows deployment script
+- **pip.conf** - Pip configuration (enforce binary wheels)
 - **backend/Dockerfile.prod** - Minimal Python image (Alpine)
 - **frontend/Dockerfile.prod** - Multi-stage Node.js → Nginx
 - **frontend/nginx.conf** - Nginx configuration for React routing
