@@ -93,12 +93,19 @@ async def upload_html_deck(
 ):
     """Upload and parse an HTML file into a database deck."""
     try:
+        print(f"📥 Uploading file: {file.filename}")
+        
         # Read file content
         content = await file.read()
+        print(f"📄 File size: {len(content)} bytes")
+        
         html_content = content.decode('utf-8')
+        print(f"✅ HTML decoded, length: {len(html_content)}")
 
         # Parse HTML
+        print("🔍 Parsing HTML...")
         parsed_data = parse_html_file(html_content)
+        print(f"✅ Parsed successfully: title='{parsed_data['title']}', cards={len(parsed_data['cards'])}")
 
         # Create deck
         new_deck = Deck(
@@ -109,22 +116,27 @@ async def upload_html_deck(
         )
         db.add(new_deck)
         db.flush()
+        print(f"✅ Deck created: id={new_deck.id}")
 
         # Add cards from parsed data
-        for card_data in parsed_data['cards']:
+        for idx, card_data in enumerate(parsed_data['cards']):
             new_card = Card(
                 deck_id=new_deck.id,
                 front=card_data['front'],
                 back=card_data['back']
             )
             db.add(new_card)
-
+        
         db.commit()
         db.refresh(new_deck)
+        print(f"✅ Deck committed with {len(parsed_data['cards'])} cards")
 
         return new_deck
 
     except Exception as e:
+        print(f"❌ Error in upload_html_deck: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Failed to parse HTML: {str(e)}")
 
