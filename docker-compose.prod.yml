@@ -1,0 +1,52 @@
+# Production Docker Compose - For Pterodactyl Hosting
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: flashcard-hub-api
+    ports:
+      - "8000:8000"
+    environment:
+      # SQLite database
+      DATABASE_URL: sqlite:///./data/flashcard.db
+      # Python
+      PYTHONUNBUFFERED: 1
+    volumes:
+      # Persist database
+      - ./backend/data:/app/data
+      # Persist uploaded files
+      - ./backend/uploads:/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        REACT_APP_API_URL: http://localhost:8000
+    container_name: flashcard-hub-web
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  data:
