@@ -1,57 +1,48 @@
 """
-Pterodactyl entry point for Flashcard Hub API.
-Auto-syncs from GitHub, initializes database, and starts FastAPI server.
+Flashcard Hub – Entry point for Pterodactyl Python Egg hosting.
+
+This script:
+1. Syncs code from GitHub (git fetch + reset --hard)
+2. Installs Python dependencies from requirements.txt
+3. Initializes database
+4. Starts the FastAPI server via uvicorn
+
+Pterodactyl auto-installs requirements.txt, then runs this file.
 """
-import os
-import sys
 import subprocess
-import uvicorn
-from pathlib import Path
+import sys
+import os
 
 # Add backend to path for imports
-backend_path = str(Path(__file__).parent / "backend")
-sys.path.insert(0, backend_path)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend"))
 
-# ── Force sync with GitHub (handles git conflicts in Pterodactyl) ──
-project_root = Path(__file__).parent
-if (project_root / ".git").is_dir():
+# ── Force sync with GitHub (fixes Pterodactyl git pull conflicts) ──
+project_root = os.path.dirname(os.path.abspath(__file__))
+if os.path.isdir(os.path.join(project_root, ".git")):
     print("==> Syncing code from GitHub...")
     try:
-        subprocess.run(["git", "fetch", "origin"], cwd=project_root, timeout=30, check=False)
-        subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=project_root, timeout=30, check=False)
-        print("✅ Code synced successfully!")
+        subprocess.run(["git", "fetch", "origin"], cwd=project_root, timeout=30)
+        subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=project_root, timeout=30)
+        print("==> Code synced successfully!")
     except Exception as e:
-        print(f"⚠️  Git sync skipped: {e}")
+        print(f"==> Git sync skipped: {e}")
 
-# Import after git sync
-from main import app
-from database import Base, engine
-
-
-def init_db():
-    """Initialize database tables on startup."""
-    try:
-        Base.metadata.create_all(bind=engine)
-        print("✅ Database initialized successfully")
-    except Exception as e:
-        print(f"❌ Database initialization error: {e}")
-
-
-# Initialize database first
-init_db()
+# Initialize database before starting server
+try:
+    from database import Base, engine
+    Base.metadata.create_all(bind=engine)
+    print("✅ Database initialized successfully")
+except Exception as e:
+    print(f"⚠️  Database initialization: {e}")
 
 # Get port from environment (Pterodactyl sets SERVER_PORT)
-port = int(os.environ.get("SERVER_PORT", 25297))
-host = "0.0.0.0"
+port = os.environ.get("SERVER_PORT") or os.environ.get("PORT") or "25297"
 
-print(f"🚀 Starting Flashcard Hub API on {host}:{port}")
-print(f"📖 API Docs: http://{host}:{port}/docs")
-print(f"🌐 Frontend: http://{host}:{port}/")
-
-# Start FastAPI server directly with uvicorn
-uvicorn.run(
-    app,
-    host=host,
-    port=port,
-    log_level="info"
-)
+# Start FastAPI server from project root
+print(f"🚀 Starting Flashcard Hub API on port {port}...")
+subprocess.call([
+    sys.executable, "-m", "uvicorn",
+    "backend.main:app",
+    "--host", "0.0.0.0",
+    "--port", str(port),
+])
