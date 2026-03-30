@@ -34,16 +34,6 @@ app.add_middleware(
 )
 
 
-@app.get("/")
-async def root():
-    """Root endpoint - API status check."""
-    return {
-        "message": "Flashcard Hub API",
-        "version": "1.0.0",
-        "status": "running"
-    }
-
-
 # ============== DECK ENDPOINTS ==============
 
 @app.get("/api/decks", response_model=List[DeckResponse])
