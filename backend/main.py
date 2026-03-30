@@ -33,13 +33,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount frontend build folder (serve React static files)
-frontend_build = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
-if os.path.exists(frontend_build):
-    app.mount("/", StaticFiles(directory=frontend_build, html=True), name="frontend")
-    allow_headers=["*"],
-)
-
 
 @app.get("/")
 async def root():
@@ -485,3 +478,9 @@ async def get_user_progress(
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
+
+# Mount frontend React build - serve static files (at END to not block /api routes!)
+frontend_build = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
+if os.path.exists(frontend_build):
+    app.mount("/", StaticFiles(directory=frontend_build, html=True), name="frontend")
