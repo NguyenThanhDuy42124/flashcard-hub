@@ -481,12 +481,22 @@ async def health_check():
 
 
 # Mount frontend React build - serve static files (at END to not block /api routes!)
-frontend_build = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
+# Use absolute path since app.py chdir to backend
+import sys
+from pathlib import Path
+
+# Get the project root (parent of backend directory)
+backend_dir = Path(__file__).parent
+project_root = backend_dir.parent
+frontend_build = project_root / "frontend" / "build"
+
+print(f"🔍 Backend dir: {backend_dir}")
+print(f"🔍 Project root: {project_root}")
 print(f"🔍 Frontend build path: {frontend_build}")
-print(f"🔍 Frontend build exists: {os.path.exists(frontend_build)}")
-if os.path.exists(frontend_build):
-    print(f"🔍 Frontend build contents: {os.listdir(frontend_build)[:5]}")
-    app.mount("/", StaticFiles(directory=frontend_build, html=True), name="frontend")
+print(f"🔍 Frontend build exists: {frontend_build.exists()}")
+if frontend_build.exists():
+    print(f"🔍 Frontend build contents: {list(frontend_build.iterdir())[:5]}")
+    app.mount("/", StaticFiles(directory=str(frontend_build), html=True), name="frontend")
     print(f"✅ Frontend mounted successfully at /")
 else:
     print(f"❌ Frontend build not found at {frontend_build}")
