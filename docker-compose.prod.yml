@@ -4,8 +4,8 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: backend/Dockerfile.prod
     container_name: flashcard-hub-api
     ports:
       - "8000:8000"
@@ -14,18 +14,16 @@ services:
       DATABASE_URL: sqlite:///./data/flashcard.db
       # Python
       PYTHONUNBUFFERED: 1
+      HOST: 0.0.0.0
+      PORT: 8000
+      RELOAD: "false"
     volumes:
       # Persist database
-      - ./backend/data:/app/data
+      - ./data:/app/data
       # Persist uploaded files
-      - ./backend/uploads:/app/uploads
+      - ./uploads:/app/uploads
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    working_dir: /app
 
   frontend:
     build:
