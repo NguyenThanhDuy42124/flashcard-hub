@@ -2,13 +2,12 @@
 
 ## 🚀 Pterodactyl Hosting
 
-### Setup (3 steps):
+### Setup (2 fields):
 
-1. **REQUIREMENTS FILE:** `requirements-wheels-only.txt`
+1. **REQUIREMENTS FILE:** `requirements.txt`
 2. **APP PY FILE:** `app.py`  
-3. **PYTHON:** Python 3.14
 
-→ Pterodactyl tự động install + chạy `python app.py`
+→ Click **Save** → Click **Start**
 
 Done! 🎉
 
@@ -16,21 +15,11 @@ Done! 🎉
 
 ## ✅ API running at:
 - Docs: `http://your-host:8000/docs`
-- API: `http://your-host:8000`
 
 ---
 
-## 🐳 Docker (Alternative)
+## 📁 Key Files
 
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
----
-
-## 📁 Files
-
-- `app.py` - Entry point (automatically runs)
-- `requirements-wheels-only.txt` - Pre-built wheels (no Rust compile)
-- `backend/` - FastAPI backend
-- `frontend/build/` - React production build
+- `app.py` - Entry point
+- `requirements.txt` - Dependencies (pre-built wheels)
+- `backend/main.py` - FastAPI app
