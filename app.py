@@ -21,11 +21,17 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 if os.path.isdir(os.path.join(project_root, ".git")):
     print("==> Syncing code from GitHub...")
     try:
-        subprocess.run(["git", "fetch", "origin"], cwd=project_root, timeout=30)
-        subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=project_root, timeout=30)
-        print("==> Code synced successfully!")
+        # Try git pull first
+        result = subprocess.run(["git", "pull", "origin", "main"], cwd=project_root, timeout=30, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Git pull warning: {result.stderr}")
+            # Fall back to fetch + reset
+            subprocess.run(["git", "fetch", "origin", "main"], cwd=project_root, timeout=30, check=True)
+            subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=project_root, timeout=30, check=True)
+        print("✅ Code synced successfully!")
+        print(f"Current commit: {subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=project_root, capture_output=True, text=True).stdout.strip()}")
     except Exception as e:
-        print(f"==> Git sync skipped: {e}")
+        print(f"❌ Git sync failed: {e}")
 
 # Initialize database before starting server
 try:
