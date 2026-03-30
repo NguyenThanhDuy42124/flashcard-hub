@@ -15,17 +15,22 @@
 app.py
 ```
 
-### Step 2: Set STARTUP COMMAND (in Pterodactyl panel settings)
+### Step 2: Set STARTUP COMMAND (LỆNH KHỞI ĐỘNG) in Pterodactyl panel
+
+**Copy this exact command:**
 ```bash
-pip cache purge && pip install --only-binary :all: --no-cache-dir -r requirements-wheels-only.txt && python3 app.py
+git pull origin main 2>/dev/null || true; pip cache purge; pip install --only-binary :all: --no-cache-dir -r requirements-wheels-only.txt; python3 app.py
 ```
 
 **This ensures:**
+- ✅ Git pulls latest code
 - ✅ Cache cleared (saves disk space)
 - ✅ Binary wheels ONLY (no Rust compile)
 - ✅ No cache dir (more disk savings)
 - ✅ Uses requirements-wheels-only.txt (pydantic 2.0.0)
 - ✅ Starts app.py
+
+**See:** [PTERODACTYL_STARTUP_COMMAND.md](PTERODACTYL_STARTUP_COMMAND.md) for detailed breakdown
 
 ---
 
