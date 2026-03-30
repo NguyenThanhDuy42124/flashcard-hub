@@ -1,9 +1,11 @@
 """FastAPI main application with all routes."""
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import List
+import os
 
 from database import get_db
 from models import User, Deck, Card, CardReview, StudySession
@@ -28,6 +30,13 @@ app.add_middleware(
     allow_origins=["http://localhost:3000", "http://localhost:3001", "*"],
     allow_credentials=True,
     allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount frontend build folder (serve React static files)
+frontend_build = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
+if os.path.exists(frontend_build):
+    app.mount("/", StaticFiles(directory=frontend_build, html=True), name="frontend")
     allow_headers=["*"],
 )
 
