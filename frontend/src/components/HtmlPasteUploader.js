@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { decksAPI } from '../api';
 
 const HtmlPasteUploader = ({ onUploadSuccess }) => {
   const [deckName, setDeckName] = useState('');
@@ -28,15 +28,7 @@ const HtmlPasteUploader = ({ onUploadSuccess }) => {
       setLoading(true);
       setError(null);
 
-      const response = await axios.post(
-        'http://localhost:8000/api/decks/create-from-html-content',
-        {
-          title: deckName,
-          description: description || '',
-          html_content: htmlContent,
-          tag: 'pasted'
-        }
-      );
+      const response = await decksAPI.pasteHtmlContent(htmlContent, deckName);
 
       setSuccess(true);
       setDeckName('');
