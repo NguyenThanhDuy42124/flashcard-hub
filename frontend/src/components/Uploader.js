@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { decksAPI } from '../api';
 
 const Uploader = ({ onUploadSuccess }) => {
   const [activeTab, setActiveTab] = useState('file'); // 'file' or 'paste'
@@ -60,14 +60,8 @@ const Uploader = ({ onUploadSuccess }) => {
     try {
       setFileLoading(true);
       setFileError(null);
-      const formData = new FormData();
-      formData.append('file', file);
       
-      const response = await axios.post(
-        'http://localhost:8000/api/decks/upload-html',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      );
+      const response = await decksAPI.uploadHtmlDeck(file);
       
       setFileSuccess(true);
       setFile(null);
@@ -101,15 +95,7 @@ const Uploader = ({ onUploadSuccess }) => {
       setPasteLoading(true);
       setPasteError(null);
 
-      const response = await axios.post(
-        'http://localhost:8000/api/decks/create-from-html-content',
-        {
-          title: deckName,
-          description: description || '',
-          html_content: htmlContent,
-          tag: 'pasted'
-        }
-      );
+      const response = await decksAPI.pasteHtmlContent(htmlContent, deckName);
 
       setPasteSuccess(true);
       setDeckName('');
