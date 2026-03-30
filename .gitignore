@@ -18,6 +18,9 @@ lib/
 lib64/
 parts/
 sdist/
+
+# Exception: Include frontend build for deployment
+!frontend/build/
 var/
 wheels/
 share/python-wheels/
