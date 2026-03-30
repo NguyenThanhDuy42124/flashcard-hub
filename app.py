@@ -44,11 +44,14 @@ except Exception as e:
 # Get port from environment (Pterodactyl sets SERVER_PORT)
 port = "25297"
 
-# Start FastAPI server from project root
+# Change to backend directory for proper imports
+os.chdir(os.path.join(project_root, "backend"))
+
+# Start FastAPI server
 print(f"🚀 Starting Flashcard Hub API on port {port}...")
 subprocess.call([
     sys.executable, "-m", "uvicorn",
-    "backend.main:app",
+    "main:app",
     "--host", "0.0.0.0",
     "--port", str(port),
 ])
