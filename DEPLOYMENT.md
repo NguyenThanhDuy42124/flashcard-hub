@@ -1,62 +1,36 @@
 # Flashcard Hub - Deployment
 
-## 🚀 Pterodactyl Hosting (Recommended)
+## 🚀 Pterodactyl Hosting
 
-### Quick Setup:
+### Setup (3 steps):
 
-1. **Startup Command:**
-   ```bash
-   chmod +x startup.sh && bash startup.sh
-   ```
+1. **REQUIREMENTS FILE:** `requirements-wheels-only.txt`
+2. **APP PY FILE:** `app.py`  
+3. **PYTHON:** Python 3.14
 
-2. **REQUIREMENTS FILE:**
-   ```
-   requirements-wheels-only.txt
-   ```
+→ Pterodactyl tự động install + chạy `python app.py`
 
-3. **Python Version:** `Python 3.14`
-
-4. **Auto-includes:**
-   - Binary wheels only (no Rust compile) ✅
-   - Cache cleanup ✅
-   - Auto fallback ✅
-   - Database initialization ✅
+Done! 🎉
 
 ---
 
-## 📝 What startup.sh does:
-
-1. Cleans pip cache (saves disk)
-2. Updates pip 
-3. Installs with `--only-binary :all:` (NO Rust!)
-4. Falls back if needed
-5. Init database
-6. Starts server on :8000
+## ✅ API running at:
+- Docs: `http://your-host:8000/docs`
+- API: `http://your-host:8000`
 
 ---
 
-## 🐳 Docker
+## 🐳 Docker (Alternative)
 
 ```bash
-# Using compose
 docker-compose -f docker-compose.prod.yml up -d
-
-# Check
-docker ps
-docker logs flashcard-hub-api
 ```
 
 ---
 
-## ✅ Success
+## 📁 Files
 
-API runs at: `http://your-host:8000/docs`
-
-Error/Issue → check:
-- Disk space: `df -h`
-- Logs: Check Pterodactyl console
-- Manual install: See startup.sh for commands
-
----
-
-**Files:** app.py, startup.sh, requirements-wheels-only.txt
+- `app.py` - Entry point (automatically runs)
+- `requirements-wheels-only.txt` - Pre-built wheels (no Rust compile)
+- `backend/` - FastAPI backend
+- `frontend/build/` - React production build
