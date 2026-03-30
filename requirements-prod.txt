@@ -1,3 +1,6 @@
+# Production requirements for Pterodactyl hosting
+# Uses pre-built wheels to avoid compilation and save disk space
+
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 sqlalchemy==2.0.23
