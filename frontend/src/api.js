@@ -5,7 +5,7 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const API = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: '/api',  // Relative URL - works on any domain/port
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -26,36 +26,36 @@ API.interceptors.response.use(
 export const decksAPI = {
   // List all decks
   listDecks: (skip = 0, limit = 10, tag = null) =>
-    API.get('/api/decks', { params: { skip, limit, tag } }),
+    API.get('/decks', { params: { skip, limit, tag } }),
 
   // Get specific deck
   getDeck: (deckId) =>
-    API.get(`/api/decks/${deckId}`),
+    API.get(`/decks/${deckId}`),
 
   // Get deck cards
   getDeckCards: (deckId) =>
-    API.get(`/api/decks/${deckId}/cards`),
+    API.get(`/decks/${deckId}/cards`),
 
   // Create new deck
   createDeck: (deckData) =>
-    API.post('/api/decks/create', deckData),
+    API.post('/decks/create', deckData),
 
   // Upload HTML deck
   uploadHtmlDeck: (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return API.post('/api/decks/upload-html', formData, {
+    return API.post('/decks/upload-html', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
 
   // Update deck
   updateDeck: (deckId, deckData) =>
-    API.put(`/api/decks/${deckId}`, deckData),
+    API.put(`/decks/${deckId}`, deckData),
 
   // Delete deck
   deleteDeck: (deckId) =>
-    API.delete(`/api/decks/${deckId}`),
+    API.delete(`/decks/${deckId}`),
 };
 
 // ============== CARD ENDPOINTS ==============
@@ -63,15 +63,15 @@ export const decksAPI = {
 export const cardsAPI = {
   // Create new card
   createCard: (deckId, cardData) =>
-    API.post(`/api/cards?deck_id=${deckId}`, cardData),
+    API.post(`/cards?deck_id=${deckId}`, cardData),
 
   // Update card
   updateCard: (cardId, cardData) =>
-    API.put(`/api/cards/${cardId}`, cardData),
+    API.put(`/cards/${cardId}`, cardData),
 
   // Delete card
   deleteCard: (cardId) =>
-    API.delete(`/api/cards/${cardId}`),
+    API.delete(`/cards/${cardId}`),
 };
 
 // ============== STUDY ENDPOINTS ==============
@@ -79,15 +79,15 @@ export const cardsAPI = {
 export const studyAPI = {
   // Start study session
   startSession: (deckId) =>
-    API.post('/api/study-sessions', { deck_id: deckId }),
+    API.post('/study-sessions', { deck_id: deckId }),
 
   // Submit card review
   submitReview: (cardId, reviewData) =>
-    API.post(`/api/cards/${cardId}/review`, reviewData),
+    API.post(`/cards/${cardId}/review`, reviewData),
 
   // Get user progress
   getUserProgress: () =>
-    API.get('/api/users/progress'),
+    API.get('/users/progress'),
 };
 
 export default API;
