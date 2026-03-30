@@ -11,12 +11,14 @@ A comprehensive web application for creating, uploading, and studying interactiv
 
 ### Core Features
 - **🏠 Homepage Dashboard** — Centralized hub to view, search, and access all available flashcard decks
-- **📤 HTML Deck Uploader** — Upload pre-built HTML files with automatic JSON parsing and database storage
+- **📤 HTML Deck Uploader** — Upload pre-built HTML files with automatic JSON parsing and database storage (json5 parser for JavaScript objects)
 - **🎨 Visual Deck Builder** — Create new flashcards manually through an intuitive UI
-- **🎯 Interactive 3D Study Mode** — Study with 3D flip animations, progress indicators, and smooth scrolling
+- **🎯 Interactive Study Mode** — Study with 3D flip animations, grid view (up to 3 cards per row), chapter filters
 - **🧠 Spaced Repetition System (SRS)** — SuperMemo-2 algorithm for optimal card scheduling
 - **👤 User Authentication** — Save progress, bookmarks, and personal study statistics
 - **📊 Progress Tracking** — View detailed statistics on study sessions and card retention
+- **🌐 Responsive Design** — Fully mobile-optimized, works on desktop/tablet/phone
+- **🇻🇳 Vietnamese UI** — Full Vietnamese localization for all components
 
 ## 🛠 Tech Stack
 
