@@ -36,24 +36,22 @@ def init_db():
         print(f"❌ Database initialization error: {e}")
 
 
-if __name__ == "__main__":
-    import uvicorn
-    
-    # Initialize database first
-    init_db()
-    
-    # Get configuration from environment (Pterodactyl sets SERVER_PORT)
-    host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("SERVER_PORT") or os.getenv("PORT") or "8000")
-    
-    print(f"🚀 Starting Flashcard Hub API on {host}:{port}")
-    print(f"📖 API Docs: http://{host}:{port}/docs")
-    print(f"🌐 Frontend: http://{host}:{port}/")
-    
-    # Start uvicorn server
-    uvicorn.run(
-        app,
-        host=host,
-        port=port,
-        log_level="info"
+# Initialize database first
+init_db()
+
+# Get port from environment variable (Pterodactyl sets SERVER_PORT or PORT)
+port = os.environ.get("SERVER_PORT") or os.environ.get("PORT") or "8000"
+host = os.environ.get("HOST") or "0.0.0.0"
+
+print(f"🚀 Starting Flashcard Hub API on {host}:{port}")
+print(f"📖 API Docs: http://{host}:{port}/docs")
+print(f"🌐 Frontend: http://{host}:{port}/")
+
+# Start FastAPI server via uvicorn
+os.chdir(str(Path(__file__).parent / "backend"))
+subprocess.call([
+    sys.executable, "-m", "uvicorn",
+    "main:app",
+    "--host", host,
+    "--port", str(port)
     )
