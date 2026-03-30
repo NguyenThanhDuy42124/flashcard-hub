@@ -41,7 +41,7 @@ def init_db():
 init_db()
 
 # Get port from environment (Pterodactyl sets SERVER_PORT)
-port = int(os.environ.get("SERVER_PORT", 8000))
+port = int(os.environ.get("SERVER_PORT", 25297))
 host = "0.0.0.0"
 
 print(f"🚀 Starting Flashcard Hub API on {host}:{port}")
