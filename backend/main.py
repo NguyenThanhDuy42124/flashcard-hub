@@ -27,11 +27,19 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "*"],
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:8000", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add response headers for insecure context
+@app.middleware("http")
+async def add_secure_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    return response
 
 
 # ============== DECK ENDPOINTS ==============
