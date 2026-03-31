@@ -1,5 +1,5 @@
 """Pydantic models for request/response validation."""
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import datetime
 
@@ -23,13 +23,6 @@ class CardResponse(CardBase):
     deck_id: int
     created_at: datetime
     updated_at: datetime
-
-    @field_validator('title', 'chapter', mode='before')
-    @classmethod
-    def handle_missing_fields(cls, v):
-        """Handle missing columns gracefully during migration."""
-        # If the attribute doesn't exist, return None
-        return v if v is not None else None
 
     class Config:
         from_attributes = True
