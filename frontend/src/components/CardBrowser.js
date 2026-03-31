@@ -441,8 +441,8 @@ const CardBrowser = () => {
                 const optionClass = (key) => {
                   const base = 'w-full text-left p-4 rounded-xl border-2 transition-all duration-150 flex items-start gap-3 font-semibold shadow-sm';
                   if (!quizMeta || !isAnswered) return `${base} border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-400 hover:bg-blue-50 text-slate-800`;
-                  if (key === quizMeta.correct) return `${base} border-emerald-500 bg-emerald-50 text-emerald-800 translate-y-0 cursor-default`;
-                  if (key === userAnswer) return `${base} border-rose-500 bg-rose-50 text-rose-800 translate-y-0 cursor-default`;
+                  if (key === quizMeta.correct) return `${base} border-emerald-400 bg-emerald-50 text-emerald-800 shadow-[0_12px_28px_-18px_rgba(16,185,129,0.7)] cursor-default`;
+                  if (key === userAnswer) return `${base} border-rose-400 bg-rose-50 text-rose-800 shadow-[0_12px_28px_-18px_rgba(244,63,94,0.65)] cursor-default`;
                   return `${base} border-slate-100 bg-slate-50 text-slate-400 opacity-70 cursor-not-allowed`;
                 };
 
@@ -562,12 +562,14 @@ const CardBrowser = () => {
 
                 return (
                   <div key={card.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
-                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                      <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">{card.chapter || 'Chương'}</span>
-                      <span className="text-xs text-slate-500 font-semibold">Câu hỏi #{idx + 1}</span>
-                    </div>
+                    <div className="p-5 sm:p-6 space-y-4">
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold uppercase tracking-wide">
+                          Chương {card.chapter || '1'}
+                        </span>
+                        <span className="text-slate-400 font-semibold">Câu hỏi #{idx + 1}</span>
+                      </div>
 
-                    <div className="p-5 space-y-4">
                       <h3 className="text-[18px] md:text-xl font-bold text-slate-900 leading-relaxed">
                         {card.front}
                       </h3>
@@ -587,18 +589,18 @@ const CardBrowser = () => {
                       </div>
 
                       {isAnswered && (
-                        <div className={`px-5 py-4 border-t animate-slide-down ${isCorrect ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-200'}`}>
+                        <div className={`mt-2 p-4 sm:p-5 border rounded-xl animate-slide-down shadow-[0_12px_30px_-18px_rgba(0,0,0,0.25)] ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
                           <div className="flex items-start gap-3">
-                            <div className={`mt-1 flex-shrink-0 ${isCorrect ? 'text-emerald-500' : 'text-amber-500'}`}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <div className={`mt-1 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${isCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                             </div>
-                            <div>
-                              <div className={`text-sm font-bold uppercase tracking-wide mb-1 ${isCorrect ? 'text-emerald-700' : 'text-amber-700'}`}>
+                            <div className="space-y-1">
+                              <div className={`text-sm font-extrabold uppercase tracking-wide ${isCorrect ? 'text-emerald-700' : 'text-amber-700'}`}>
                                 {isCorrect ? 'Tuyệt vời! Giải thích chi tiết:' : 'Rất tiếc! Cùng xem giải thích nhé:'}
                               </div>
                               <p className="text-slate-700 leading-relaxed text-[15px]">{quizMeta.explanation || 'Không có giải thích.'}</p>
                               {!isCorrect && quizMeta.correct && (
-                                <p className="text-slate-600 text-sm mt-2">Đáp án đúng: {quizMeta.correct}</p>
+                                <p className="text-slate-600 text-sm mt-1">Đáp án đúng: {quizMeta.correct}</p>
                               )}
                             </div>
                           </div>
