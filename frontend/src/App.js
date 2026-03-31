@@ -9,11 +9,24 @@ import { studyAPI } from './api';
 
 function App() {
   const [userProgress, setUserProgress] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(
+    typeof window !== 'undefined' && localStorage.getItem('flashcardAdmin') === 'true'
+  );
 
   useEffect(() => {
     // Fetch user progress on app load
     fetchUserProgress();
+    const handleStorage = () => {
+      setIsAdmin(localStorage.getItem('flashcardAdmin') === 'true');
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('flashcardAdmin');
+    setIsAdmin(false);
+  };
 
   const fetchUserProgress = async () => {
     try {
@@ -51,6 +64,21 @@ function App() {
                   <div className="text-xs sm:text-sm text-gray-600 bg-blue-100 px-2 sm:px-3 py-1 rounded whitespace-nowrap">
                     Đã ôn: {userProgress.total_cards_reviewed}
                   </div>
+                )}
+                {isAdmin ? (
+                  <div className="flex items-center gap-2 text-sm sm:text-base">
+                    <span className="text-green-700 font-semibold">Hello, Admin</span>
+                    <button
+                      onClick={handleLogout}
+                      className="text-red-600 hover:text-red-700 font-medium border border-red-200 px-2 py-1 rounded"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <Link to="/login" className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base">
+                    Admin Login
+                  </Link>
                 )}
               </div>
             </div>
