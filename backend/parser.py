@@ -91,7 +91,9 @@ def parse_cards_json(json_str: str) -> List[Dict[str, str]]:
             'id': str(card.get('id', idx + 1)),
             'front': str(card['front']).strip(),
             'back': back_text,
-            'category': str(card.get('category', 'General'))
+            'category': str(card.get('category', 'General')),
+            'title': str(card.get('title', '')).strip() if card.get('title') else None,
+            'chapter': str(card.get('chapter', '')).strip() if card.get('chapter') else None
         })
 
     if not validated_cards:

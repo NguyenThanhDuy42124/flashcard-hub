@@ -28,7 +28,7 @@ const HtmlPasteUploader = ({ onUploadSuccess }) => {
       setLoading(true);
       setError(null);
 
-      const response = await decksAPI.pasteHtmlContent(htmlContent, deckName);
+      const response = await decksAPI.pasteHtmlContent(htmlContent, deckName, description);
 
       setSuccess(true);
       setDeckName('');

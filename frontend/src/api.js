@@ -60,10 +60,10 @@ export const decksAPI = {
   },
 
   // Paste HTML content as string
-  pasteHtmlContent: (htmlContent, deckName) =>
+  pasteHtmlContent: (htmlContent, deckName, description = '') =>
     API.post('/decks/create-from-html-content', {
       title: deckName || 'Imported Deck',
-      description: '',
+      description: description,
       html_content: htmlContent
     }),
 

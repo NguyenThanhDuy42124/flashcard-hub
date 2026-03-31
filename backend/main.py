@@ -271,10 +271,12 @@ async def upload_html_deck(
             new_card = Card(
                 deck_id=new_deck.id,
                 front=card_data['front'],
-                back=card_data['back']
+                back=card_data['back'],
+                title=card_data.get('title'),
+                chapter=card_data.get('chapter')
             )
             db.add(new_card)
-        
+
         db.commit()
         db.refresh(new_deck)
         print(f"✅ Deck committed with {len(parsed_data['cards'])} cards")
@@ -302,8 +304,8 @@ async def create_deck_from_html_content(
 
         # Create deck with provided title and description
         new_deck = Deck(
-            title=request.title or parsed_data.get('title', 'Untitled Deck'),
-            description=request.description or parsed_data.get('description', ''),
+            title=request.title if request.title else parsed_data.get('title', 'Untitled Deck'),
+            description=request.description if request.description is not None else parsed_data.get('description', ''),
             owner_id=user_id,
             tag=request.tag,
             is_public=True
@@ -316,7 +318,9 @@ async def create_deck_from_html_content(
             new_card = Card(
                 deck_id=new_deck.id,
                 front=card_data['front'],
-                back=card_data['back']
+                back=card_data['back'],
+                title=card_data.get('title'),
+                chapter=card_data.get('chapter')
             )
             db.add(new_card)
 
