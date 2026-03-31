@@ -305,12 +305,23 @@ async def create_deck_from_html_content(
 @app.get("/api/decks/{deck_id}", response_model=DeckResponse)
 async def get_deck(deck_id: int, db: Session = Depends(get_db)):
     """Get a specific deck with all its cards."""
-    deck = db.query(Deck).filter(Deck.id == deck_id).first()
+    try:
+        logger.info(f"📖 Fetching deck: deck_id={deck_id}")
+        deck = db.query(Deck).filter(Deck.id == deck_id).first()
 
-    if not deck:
-        raise HTTPException(status_code=404, detail="Deck not found")
+        if not deck:
+            logger.warning(f"⚠️ Deck not found: deck_id={deck_id}")
+            all_decks = db.query(Deck).count()
+            logger.info(f"   Available decks in database: {all_decks}")
+            raise HTTPException(status_code=404, detail=f"Deck {deck_id} not found")
 
-    return deck
+        logger.info(f"✅ Deck found: {deck.title} (ID: {deck_id}, Cards: {len(deck.cards)})")
+        return deck
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error fetching deck: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/decks/{deck_id}/cards", response_model=List[CardResponse])
@@ -322,30 +333,42 @@ async def get_deck_cards(
     db: Session = Depends(get_db)
 ):
     """Get all cards for a specific deck with optional sorting and filtering."""
-    deck = db.query(Deck).filter(Deck.id == deck_id).first()
+    try:
+        logger.info(f"🃏 Fetching cards: deck_id={deck_id}, sort_by={sort_by}, chapter={chapter}, search={search}")
+        
+        deck = db.query(Deck).filter(Deck.id == deck_id).first()
 
-    if not deck:
-        raise HTTPException(status_code=404, detail="Deck not found")
+        if not deck:
+            logger.warning(f"⚠️ Deck not found for cards: deck_id={deck_id}")
+            all_decks = db.query(Deck).count()
+            logger.info(f"   Available decks in database: {all_decks}")
+            raise HTTPException(status_code=404, detail=f"Deck {deck_id} not found")
 
-    query = db.query(Card).filter(Card.deck_id == deck_id)
-    
-    # Filter by chapter if provided
-    if chapter and chapter != "Tất cả":
-        query = query.filter(Card.chapter == chapter)
-    
-    # Search by title if provided
-    if search:
-        query = query.filter(Card.title.ilike(f"%{search}%"))
-    
-    # Sort results
-    if sort_by == "title":
-        cards = query.order_by(Card.title).all()
-    elif sort_by == "created":
-        cards = query.order_by(Card.created_at.desc()).all()
-    else:  # default to chapter
-        cards = query.order_by(Card.chapter, Card.created_at).all()
-    
-    return cards
+        query = db.query(Card).filter(Card.deck_id == deck_id)
+        
+        # Filter by chapter if provided
+        if chapter and chapter != "Tất cả":
+            query = query.filter(Card.chapter == chapter)
+        
+        # Search by title if provided
+        if search:
+            query = query.filter(Card.title.ilike(f"%{search}%"))
+        
+        # Sort results
+        if sort_by == "title":
+            cards = query.order_by(Card.title).all()
+        elif sort_by == "created":
+            cards = query.order_by(Card.created_at.desc()).all()
+        else:  # default to chapter
+            cards = query.order_by(Card.chapter, Card.created_at).all()
+        
+        logger.info(f"✅ Found {len(cards)} cards for deck '{deck.title}'")
+        return cards
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error fetching cards: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/api/decks/{deck_id}", response_model=DeckResponse)
