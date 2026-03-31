@@ -750,6 +750,12 @@ const CardBrowser = () => {
                               className="w-5 h-5 cursor-pointer accent-red-500"
                             />
                             <button
+                              onClick={(e) => { e.stopPropagation(); openEditModal(card); }}
+                              className="text-blue-500 hover:text-blue-700 bg-blue-50 rounded px-2 text-xs"
+                            >
+                              Sửa
+                            </button>
+                            <button
                               onClick={(e) => handleDeleteCard(card.id, e)}
                               className="text-red-500 hover:text-red-700 bg-red-50 rounded px-2 text-xs"
                             >
