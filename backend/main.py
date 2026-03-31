@@ -475,20 +475,31 @@ async def start_study_session(
     user_id: int = 1
 ):
     """Start a new study session."""
-    deck = db.query(Deck).filter(Deck.id == session_data.deck_id).first()
+    try:
+        logger.info(f"📚 Starting study session for deck_id={session_data.deck_id}, user_id={user_id}")
+        
+        deck = db.query(Deck).filter(Deck.id == session_data.deck_id).first()
 
-    if not deck:
-        raise HTTPException(status_code=404, detail="Deck not found")
+        if not deck:
+            logger.warning(f"⚠️ Deck not found: deck_id={session_data.deck_id}")
+            raise HTTPException(status_code=404, detail=f"Deck {session_data.deck_id} not found")
 
-    new_session = StudySession(
-        user_id=user_id,
-        deck_id=session_data.deck_id
-    )
-    db.add(new_session)
-    db.commit()
-    db.refresh(new_session)
+        new_session = StudySession(
+            user_id=user_id,
+            deck_id=session_data.deck_id
+        )
+        db.add(new_session)
+        db.commit()
+        db.refresh(new_session)
+        
+        logger.info(f"✅ Study session created: session_id={new_session.id}")
 
-    return new_session
+        return new_session
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error starting study session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/cards/{card_id}/review")
