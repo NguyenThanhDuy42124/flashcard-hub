@@ -332,13 +332,33 @@ const CardBrowser = () => {
                 <option value="created">🕐 Mới nhất trước</option>
               </select>
 
-              <input
-                type="text"
-                placeholder="🔍 Tìm kiếm tựa đề/câu hỏi..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:max-w-xs text-sm"
-              />
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-1">
+                <input
+                  type="text"
+                  placeholder="🔍 Tìm kiếm tựa đề/câu hỏi..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full text-sm"
+                />
+
+                {deck.tag === 'Quiz' && (
+                  <div className="flex items-center gap-4 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
+                    <div className="text-center">
+                      <div className="text-xs font-bold text-slate-500 uppercase">Hoàn thành</div>
+                      <div className="text-lg font-extrabold text-blue-600">{Object.keys(quizAnswers).length} / {filteredCards.length}</div>
+                    </div>
+                    <div className="w-px h-8 bg-slate-200"></div>
+                    <div className="text-center">
+                      <div className="text-xs font-bold text-slate-500 uppercase">Đúng</div>
+                      <div className="text-lg font-extrabold text-emerald-600">{Object.entries(quizAnswers).reduce((acc, [id, ans]) => {
+                        const meta = parseQuizMeta(cards.find(c => c.id === Number(id)) || {});
+                        if (meta && ans === meta.correct) return acc + 1;
+                        return acc;
+                      }, 0)}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {isAdmin && selectedCards.size > 0 && (
                 <button
@@ -378,54 +398,6 @@ const CardBrowser = () => {
       {/* Main Content - Quiz layout vs Flashcard layout */}
       {deck.tag === 'Quiz' ? (
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 sm:p-6 mb-6 sticky top-4 z-10">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Chương:</span>
-                <div className="flex flex-wrap gap-2">
-                  {chapters.map(chapter => (
-                    <button
-                      key={chapter}
-                      onClick={() => setSelectedChapter(chapter)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors shadow-sm ${
-                        selectedChapter === chapter
-                          ? 'bg-slate-900 text-white'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      {chapter}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm tựa đề/câu hỏi..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="px-3 sm:px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full sm:w-72"
-                />
-                <div className="flex items-center gap-4 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
-                  <div className="text-center">
-                    <div className="text-xs font-bold text-slate-500 uppercase">Hoàn thành</div>
-                    <div className="text-lg font-extrabold text-blue-600">{Object.keys(quizAnswers).length} / {filteredCards.length}</div>
-                  </div>
-                  <div className="w-px h-8 bg-slate-200"></div>
-                  <div className="text-center">
-                    <div className="text-xs font-bold text-slate-500 uppercase">Đúng</div>
-                    <div className="text-lg font-extrabold text-emerald-600">{Object.entries(quizAnswers).reduce((acc, [id, ans]) => {
-                      const meta = parseQuizMeta(cards.find(c => c.id === Number(id)) || {});
-                      if (meta && ans === meta.correct) return acc + 1;
-                      return acc;
-                    }, 0)}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {filteredCards.length === 0 ? (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
               <p className="text-yellow-800 text-base sm:text-lg">Không có câu hỏi cho bộ lọc này.</p>
