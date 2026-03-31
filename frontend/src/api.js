@@ -51,9 +51,11 @@ export const decksAPI = {
     API.post('/decks/create', deckData),
 
   // Upload HTML deck
-  uploadHtmlDeck: (file) => {
+  uploadHtmlDeck: (file, title, description) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (title) formData.append('title', title);
+    if (description) formData.append('description', description);
     return API.post('/decks/upload-html', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -74,6 +76,10 @@ export const decksAPI = {
   // Delete deck
   deleteDeck: (deckId) =>
     API.delete(`/decks/${deckId}`),
+
+  // Append HTML to existing deck
+  appendCardsFromHtml: (deckId, htmlContent) =>
+    API.post(`/decks/${deckId}/append-from-html`, { html_content: htmlContent }),
 };
 
 // ============== CARD ENDPOINTS ==============

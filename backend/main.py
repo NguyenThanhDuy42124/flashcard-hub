@@ -294,6 +294,7 @@ async def upload_html_deck(
 @app.post("/api/decks/create-from-html-content", response_model=DeckResponse)
 async def create_deck_from_html_content(
     request: CreateDeckFromHTMLRequest,
+    AppendHTMLRequest,
     db: Session = Depends(get_db),
     user_id: int = 1
 ):
@@ -455,6 +456,40 @@ async def delete_deck(
     db.commit()
 
     return {"message": "Deck deleted successfully"}
+
+
+
+@app.post("/api/decks/{deck_id}/append-from-html")
+async def append_cards_from_html(
+    deck_id: int,
+    request: AppendHTMLRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        from parser import parse_html_file
+        parsed_data = parse_html_file(request.html_content)
+        
+        deck = db.query(Deck).filter(Deck.id == deck_id).first()
+        if not deck:
+            raise HTTPException(status_code=404, detail="Deck not found")
+            
+        added_cards = []
+        for card_data in parsed_data['cards']:
+            new_card = Card(
+                deck_id=deck_id,
+                front=card_data['front'],
+                back=card_data['back'],
+                title=card_data.get('title'),
+                chapter=card_data.get('chapter')
+            )
+            db.add(new_card)
+            added_cards.append(new_card)
+            
+        db.commit()
+        return {"message": f"Added {len(added_cards)} cards successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ============== CARD ENDPOINTS ==============

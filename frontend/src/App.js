@@ -4,6 +4,7 @@ import DeckList from './components/DeckList';
 import Uploader from './components/Uploader';
 import DeckBuilder from './components/DeckBuilder';
 import CardBrowser from './components/CardBrowser';
+import Login from './components/Login';
 import { studyAPI } from './api';
 
 function App() {
@@ -63,13 +64,9 @@ function App() {
             <Route path="/create" element={<DeckBuilder />} />
             <Route path="/upload" element={<Uploader onUploadSuccess={() => fetchUserProgress()} />} />
             <Route path="/deck/:deckId/cards" element={<CardBrowser />} />
+            <Route path="/login" element={<Login />} />
           </Routes>
         </main>
-
-        {/* Footer */}
-        <footer className="bg-gray-800 text-white text-center py-4 mt-auto">
-          <p>Flashcard Hub © 2026 - Nền tảng học tập tương tác với SRS</p>
-        </footer>
       </div>
     </Router>
   );

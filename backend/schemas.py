@@ -122,3 +122,7 @@ class UserProgressResponse(BaseModel):
     average_accuracy: float
     decks_studied: int
     current_streak: int
+
+
+class AppendHTMLRequest(BaseModel):
+    html_content: str

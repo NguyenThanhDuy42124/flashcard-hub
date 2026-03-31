@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { decksAPI } from '../api';
+import { decksAPI, cardsAPI } from '../api';
 import CreateCardModal from './CreateCardModal';
 
 // Mảng màu sắc Gradient cho mặt sau của thẻ
@@ -25,6 +25,12 @@ const CardBrowser = () => {
   const [sortBy, setSortBy] = useState('chapter');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCards, setSelectedCards] = useState(new Set());
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+  const [bulkHtml, setBulkHtml] = useState('');
+  const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
 
   useEffect(() => {
     const fetchDeckAndCards = async () => {
@@ -36,8 +42,7 @@ const CardBrowser = () => {
         setDeck(deckResponse.data);
         
         // Fetch cards with sorting
-        const chapterFilter = selectedChapter === 'Tất cả' ? null : selectedChapter;
-        const cardsResponse = await decksAPI.getDeckCards(deckId, sortBy, chapterFilter);
+        const cardsResponse = await decksAPI.getDeckCards(deckId, sortBy, null);
         const allCards = cardsResponse.data;
         setCards(allCards);
         
@@ -59,7 +64,7 @@ const CardBrowser = () => {
     };
 
     fetchDeckAndCards();
-  }, [deckId, sortBy, selectedChapter]);
+  }, [deckId, sortBy]);
 
   const filteredCards = cards.filter(card => {
     const chapterMatch = selectedChapter === 'Tất cả' || (card.chapter || 'General') === selectedChapter;
@@ -83,6 +88,90 @@ const CardBrowser = () => {
     // Update chapters if new chapter added
     if (newCard.chapter && !chapters.includes(newCard.chapter)) {
       setChapters(prev => [...prev, newCard.chapter]);
+    }
+  };
+
+  const handleDeleteCard = async (cardId, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Bạn có chắc chắn muốn xóa thẻ này?')) return;
+    
+    try {
+      await cardsAPI.deleteCard(cardId);
+      setCards(prev => prev.filter(c => c.id !== cardId));
+      setSelectedCards(prev => {
+        const next = new Set(prev);
+        next.delete(cardId);
+        return next;
+      });
+    } catch (err) {
+      alert('Lỗi khi xóa thẻ');
+    }
+  };
+
+  const toggleSelectCard = (cardId, e) => {
+    e.stopPropagation();
+    setSelectedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(cardId)) {
+        next.delete(cardId);
+      } else {
+        next.add(cardId);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCards.size === 0) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa ${selectedCards.size} thẻ đã chọn?`)) return;
+    
+    try {
+      // Create a copy of cards array, delete one by one
+      for (const cardId of selectedCards) {
+         await cardsAPI.deleteCard(cardId);
+      }
+      setCards(prev => prev.filter(c => !selectedCards.has(c.id)));
+      setSelectedCards(new Set());
+      alert('Đã xóa thành công');
+    } catch (err) {
+      alert('Lỗi khi xóa nhiều thẻ');
+    }
+  };
+
+  const handleUpdateTitle = async () => {
+    try {
+      await decksAPI.updateDeck(deckId, { ...deck, title: newTitle });
+      setDeck(prev => ({ ...prev, title: newTitle }));
+      setIsEditingTitle(false);
+    } catch (err) {
+      alert('Lỗi khi cập nhật tên deck');
+    }
+  };
+
+  const handleBulkAddHtml = async () => {
+    if (!bulkHtml.trim()) return;
+    try {
+      setLoading(true);
+      await decksAPI.appendCardsFromHtml(deckId, bulkHtml);
+      // Refresh current page
+      const cardsResponse = await decksAPI.getDeckCards(deckId, sortBy, null);
+      const allCards = cardsResponse.data;
+      setCards(allCards);
+      
+      const uniqueChapters = ['Tất cả', ...new Set(
+        allCards
+          .map(card => card.chapter || 'General')
+          .filter(ch => ch)
+      )];
+      setChapters(uniqueChapters);
+      
+      setIsBulkAddOpen(false);
+      setBulkHtml('');
+      alert('Đã thêm thẻ hàng loạt thành công!');
+    } catch (err) {
+      alert('Lỗi: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -141,22 +230,55 @@ const CardBrowser = () => {
             >
               ← Quay lại
             </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-3 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition text-sm whitespace-nowrap"
-            >
-              + Thêm Card
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-3 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition text-sm whitespace-nowrap"
+              >
+                + Thêm 1 Card
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setIsBulkAddOpen(true)}
+                  className="px-3 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition text-sm whitespace-nowrap"
+                >
+                  + Thêm hàng loạt
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Title Section */}
-          <div className="text-center mb-6 sm:mb-8">
+          <div className="text-center mb-6 sm:mb-8 relative group">
             <div className="inline-flex items-center justify-center p-2 sm:p-3 bg-blue-600 text-white rounded-xl mb-2 sm:mb-4">
               <span className="text-xl sm:text-2xl">ℹ️</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2 sm:mb-4 line-clamp-2">
-              {deck.title}
-            </h1>
+            
+            {isEditingTitle && isAdmin ? (
+              <div className="flex justify-center items-center gap-2 mb-2 sm:mb-4">
+                <input 
+                  type="text" 
+                  value={newTitle} 
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className="text-2xl sm:text-3xl font-bold text-gray-900 border-b-2 border-blue-500 focus:outline-none text-center px-2 py-1 max-w-lg w-full"
+                  autoFocus
+                />
+                <button onClick={handleUpdateTitle} className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600">✓</button>
+                <button onClick={() => setIsEditingTitle(false)} className="p-2 bg-gray-400 text-white rounded-full hover:bg-gray-500">✕</button>
+              </div>
+            ) : (
+              <div className="flex justify-center items-center gap-2">
+                <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2 sm:mb-4 line-clamp-2">
+                  {deck.title}
+                </h1>
+                {isAdmin && (
+                  <button onClick={() => { setNewTitle(deck.title); setIsEditingTitle(true); }} className="text-gray-400 hover:text-blue-500 self-start mt-2">
+                    ✎
+                  </button>
+                )}
+              </div>
+            )}
+            
             <p className="text-gray-600 text-xs sm:text-base max-w-2xl mx-auto px-2">
               {deck.description}
             </p>
@@ -184,6 +306,15 @@ const CardBrowser = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:max-w-xs text-sm"
                 />
+                
+                {isAdmin && selectedCards.size > 0 && (
+                  <button 
+                    onClick={handleBulkDelete}
+                    className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition text-sm whitespace-nowrap"
+                  >
+                    🗑️ Xóa ({selectedCards.size})
+                  </button>
+                )}
             </div>
 
             {/* Card Count */}
@@ -259,6 +390,25 @@ const CardBrowser = () => {
                       {card.chapter && (
                         <div className="absolute top-4 left-4 bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                           {card.chapter}
+                        </div>
+                      )}
+                      
+                      {/* Admin Controls */}
+                      {isAdmin && (
+                        <div className="absolute top-4 right-16 flex gap-2">
+                           <input 
+                              type="checkbox" 
+                              checked={selectedCards.has(card.id)}
+                              onChange={(e) => toggleSelectCard(card.id, e)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-5 h-5 cursor-pointer accent-red-500"
+                           />
+                           <button 
+                              onClick={(e) => handleDeleteCard(card.id, e)}
+                              className="text-red-500 hover:text-red-700 bg-red-50 rounded px-2 text-xs"
+                           >
+                              Xóa
+                           </button>
                         </div>
                       )}
 
@@ -343,6 +493,40 @@ const CardBrowser = () => {
         onCardCreated={handleCardCreated}
         chapters={chapters.filter(ch => ch !== 'Tất cả')}
       />
+
+      {/* Bulk Add HTML Modal */}
+      {isBulkAddOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 min-p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-3xl flex flex-col max-h-[90vh]">
+             <h2 className="text-2xl font-bold mb-4 text-gray-800">Thêm thẻ hàng loạt (Dán HTML)</h2>
+             <p className="text-gray-600 text-sm mb-4">
+                Dán mã HTML chứa các thẻ của bạn vào đây. Các thẻ sẽ được tự động phân loại và thêm vào deck hiện tại.
+             </p>
+             <textarea 
+                value={bulkHtml}
+                onChange={(e) => setBulkHtml(e.target.value)}
+                placeholder="<div className='card-list'>...</div>"
+                className="flex-1 w-full p-4 border border-gray-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 mb-6 resize-none"
+             ></textarea>
+             
+             <div className="flex justify-end gap-3 mt-auto">
+                <button 
+                  onClick={() => setIsBulkAddOpen(false)}
+                  className="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button 
+                  onClick={handleBulkAddHtml}
+                  disabled={loading || !bulkHtml.trim()}
+                  className={`px-5 py-2 rounded-lg text-white font-medium ${loading || !bulkHtml.trim() ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                >
+                  {loading ? 'Đang xử lý...' : 'Thêm hàng loạt'}
+                </button>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

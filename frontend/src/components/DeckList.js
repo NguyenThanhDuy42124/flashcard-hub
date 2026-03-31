@@ -8,6 +8,7 @@ const DeckList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState(null);
   const [tags, setTags] = useState([]);
+  const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
 
   useEffect(() => {
     fetchDecks();
@@ -131,12 +132,14 @@ const DeckList = () => {
                   >
                     📖 Ôn Tập
                   </a>
+                  {isAdmin && (
                   <button
                     onClick={() => handleDelete(deck.id)}
                     className="px-4 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition"
                   >
                     🗑️ Xóa
                   </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -10,6 +10,8 @@ const Uploader = ({ onUploadSuccess }) => {
   const [fileLoading, setFileLoading] = useState(false);
   const [fileError, setFileError] = useState(null);
   const [fileSuccess, setFileSuccess] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadDesc, setUploadDesc] = useState('');
   const fileInputRef = useRef(null);
   
   // HTML paste state
@@ -61,10 +63,12 @@ const Uploader = ({ onUploadSuccess }) => {
       setFileLoading(true);
       setFileError(null);
       
-      const response = await decksAPI.uploadHtmlDeck(file);
-      
+      const response = await decksAPI.uploadHtmlDeck(file, uploadTitle, uploadDesc);
+
       setFileSuccess(true);
       setFile(null);
+      setUploadTitle('');
+      setUploadDesc('');
       onUploadSuccess();
       
       setTimeout(() => {
@@ -164,6 +168,30 @@ const Uploader = ({ onUploadSuccess }) => {
                   ❌ {fileError}
                 </div>
               )}
+
+              {/* Tùy chỉnh tên deck */}
+              <div className="mb-6 space-y-4">
+                <div>
+                  <label className="block text-gray-700 font-bold mb-2 text-sm">Tên Deck (Tùy chọn - Mặc định lấy theo File HTML)</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm"
+                    placeholder="Nhập tên mới hoặc để trống"
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-bold mb-2 text-sm">Mô tả (Tùy chọn)</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm"
+                    placeholder="Một vài dòng giới thiệu..."
+                    value={uploadDesc}
+                    onChange={(e) => setUploadDesc(e.target.value)}
+                  />
+                </div>
+              </div>
 
               {/* Drag & Drop Area */}
               <div
