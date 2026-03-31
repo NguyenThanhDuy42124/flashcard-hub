@@ -28,6 +28,7 @@ const CardBrowser = () => {
   const [selectedCards, setSelectedCards] = useState(new Set());
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newTag, setNewTag] = useState('');
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [bulkHtml, setBulkHtml] = useState('');
   const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
@@ -40,6 +41,7 @@ const CardBrowser = () => {
         // Fetch deck info
         const deckResponse = await decksAPI.getDeck(deckId);
         setDeck(deckResponse.data);
+        setNewTag(deckResponse.data.tag || '');
         
         // Fetch cards with sorting
         const cardsResponse = await decksAPI.getDeckCards(deckId, sortBy, null);
@@ -140,8 +142,8 @@ const CardBrowser = () => {
 
   const handleUpdateTitle = async () => {
     try {
-      await decksAPI.updateDeck(deckId, { ...deck, title: newTitle });
-      setDeck(prev => ({ ...prev, title: newTitle }));
+      await decksAPI.updateDeck(deckId, { ...deck, title: newTitle || deck.title, tag: newTag || null });
+      setDeck(prev => ({ ...prev, title: newTitle || deck.title, tag: newTag || null }));
       setIsEditingTitle(false);
     } catch (err) {
       alert('Lỗi khi cập nhật tên deck');
@@ -282,6 +284,32 @@ const CardBrowser = () => {
             <p className="text-gray-600 text-xs sm:text-base max-w-2xl mx-auto px-2">
               {deck.description}
             </p>
+
+            {/* Tag hiển thị & chỉnh sửa */}
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mt-3">
+              <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${deck.tag === 'Quiz' ? 'bg-purple-100 text-purple-700' : deck.tag === 'Flashcard' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                Tag: {deck.tag || 'None'}
+              </span>
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">None</option>
+                    <option value="Flashcard">Flashcard</option>
+                    <option value="Quiz">Quiz</option>
+                  </select>
+                  <button
+                    onClick={handleUpdateTitle}
+                    className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                  >
+                    Lưu tag
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Controls Row */}

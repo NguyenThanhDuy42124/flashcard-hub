@@ -119,11 +119,9 @@ const DeckList = () => {
                   <span className="text-sm font-medium text-blue-600">
                     {deck.cards.length} thẻ
                   </span>
-                  {deck.tag && (
-                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                      {deck.tag}
-                    </span>
-                  )}
+                  <span className={`text-xs px-2 py-1 rounded ${deck.tag === 'Quiz' ? 'bg-purple-100 text-purple-700' : deck.tag === 'Flashcard' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                    {deck.tag || 'None'}
+                  </span>
                 </div>
                 <div className="flex gap-2">
                   <a

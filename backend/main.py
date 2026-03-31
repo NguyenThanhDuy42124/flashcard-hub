@@ -1,5 +1,5 @@
 """FastAPI main application with all routes."""
-from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Query, Request
+from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Query, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -237,6 +237,8 @@ async def create_deck(
 @app.post("/api/decks/upload-html", response_model=DeckResponse)
 async def upload_html_deck(
     file: UploadFile = File(...),
+    title: str = Form(None),
+    description: str = Form(None),
     db: Session = Depends(get_db),
     user_id: int = 1
 ):
@@ -258,9 +260,10 @@ async def upload_html_deck(
 
         # Create deck
         new_deck = Deck(
-            title=parsed_data['title'],
-            description=parsed_data['description'],
+            title=title or parsed_data['title'],
+            description=description if description is not None else parsed_data['description'],
             owner_id=user_id,
+            tag=parsed_data.get('tag'),
             is_public=True
         )
         db.add(new_deck)
@@ -295,7 +298,6 @@ async def upload_html_deck(
 @app.post("/api/decks/create-from-html-content", response_model=DeckResponse)
 async def create_deck_from_html_content(
     request: CreateDeckFromHTMLRequest,
-    AppendHTMLRequest,
     db: Session = Depends(get_db),
     user_id: int = 1
 ):
@@ -309,7 +311,7 @@ async def create_deck_from_html_content(
             title=request.title if request.title else parsed_data.get('title', 'Untitled Deck'),
             description=request.description if request.description is not None else parsed_data.get('description', ''),
             owner_id=user_id,
-            tag=request.tag,
+            tag=request.tag if request.tag is not None else parsed_data.get('tag'),
             is_public=True
         )
         db.add(new_deck)
@@ -473,6 +475,9 @@ async def append_cards_from_html(
         deck = db.query(Deck).filter(Deck.id == deck_id).first()
         if not deck:
             raise HTTPException(status_code=404, detail="Deck not found")
+        # Nếu deck chưa có tag, gán theo loại phát hiện từ nội dung
+        if not deck.tag and parsed_data.get('tag'):
+            deck.tag = parsed_data.get('tag')
             
         added_cards = []
         for card_data in parsed_data['cards']:

@@ -36,7 +36,7 @@ def extract_json_from_html(html_content: str) -> str:
     raise ValueError("Could not find an array of objects structure in any <script> tag")
 
 
-def parse_cards_json(json_str: str) -> List[Dict[str, str]]:
+def parse_cards_json(json_str: str) -> Dict[str, Any]:
     """
     Parse and validate cards JSON string.
 
@@ -59,23 +59,56 @@ def parse_cards_json(json_str: str) -> List[Dict[str, str]]:
     if not isinstance(cards_data, list):
         raise ValueError("cardsData must be an array")
 
-    # Validate each card
-    validated_cards = []
+    # Detect format: quiz or flashcard
+    detected_type = "flashcard"
+    validated_cards: List[Dict[str, Any]] = []
+
     for idx, card in enumerate(cards_data):
         if not isinstance(card, dict):
             raise ValueError(f"Card at index {idx} is not an object")
 
-        # front và back là bắt buộc, id có thể auto-generate
+        # QUIZ format: question + options + correctAnswer + explanation (optional chapter/title)
+        if 'question' in card and 'options' in card:
+            detected_type = "quiz"
+            question_text = str(card.get('question', '')).strip()
+            options_obj = card.get('options', {}) or {}
+            # Build options as multiline string for front
+            option_lines = []
+            for key, val in options_obj.items():
+                option_lines.append(f"{key}. {val}")
+            options_block = "\n".join(option_lines)
+            correct = str(card.get('correctAnswer', '')).strip()
+            explanation = str(card.get('explanation', '')).strip()
+
+            front_text = question_text
+            if options_block:
+                front_text = f"{question_text}\n\n{options_block}"
+
+            back_lines = []
+            if correct:
+                back_lines.append(f"Đáp án đúng: {correct}")
+            if explanation:
+                back_lines.append(explanation)
+            back_text = "\n\n".join(back_lines).strip() or "Không có giải thích"
+
+            validated_cards.append({
+                'id': str(card.get('id', idx + 1)),
+                'front': front_text,
+                'back': back_text,
+                'category': str(card.get('category', 'Quiz')),
+                'title': question_text or None,
+                'chapter': str(card.get('chapter', '')).strip() if card.get('chapter') else None
+            })
+            continue
+
+        # FLASHCARD format (default): front/back required
         if 'front' not in card:
             raise ValueError(f"Card at index {idx} missing 'front' field")
-
         if 'back' not in card:
             raise ValueError(f"Card at index {idx} missing 'back' field")
 
-        # Handle back field - can be string or array
         back_content = card['back']
         if isinstance(back_content, list):
-            # If back is array, join with newlines
             back_text = '\n'.join(str(item).strip() for item in back_content if item)
         else:
             back_text = str(back_content).strip()
@@ -92,7 +125,7 @@ def parse_cards_json(json_str: str) -> List[Dict[str, str]]:
     if not validated_cards:
         raise ValueError("No valid cards found in cardsData array")
 
-    return validated_cards
+    return {"cards": validated_cards, "detected_type": detected_type}
 
 
 def parse_html_file(html_content: str) -> Dict[str, Any]:
@@ -109,7 +142,9 @@ def parse_html_file(html_content: str) -> Dict[str, Any]:
     json_str = extract_json_from_html(html_content)
 
     # Parse and validate cards
-    cards = parse_cards_json(json_str)
+    parsed = parse_cards_json(json_str)
+    cards = parsed["cards"]
+    detected_type = parsed.get("detected_type", "flashcard")
 
     # Extract title from HTML if available
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -119,9 +154,12 @@ def parse_html_file(html_content: str) -> Dict[str, Any]:
     if soup.find('title'):
         title = soup.find('title').string or "Imported Deck"
 
+    tag = "Quiz" if detected_type == "quiz" else "Flashcard"
+
     return {
         'title': title,
         'description': f"Imported from HTML file",
         'cards': cards,
-        'card_count': len(cards)
+        'card_count': len(cards),
+        'tag': tag
     }
