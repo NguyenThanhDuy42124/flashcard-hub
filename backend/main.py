@@ -7,8 +7,9 @@ from datetime import datetime, timedelta
 from typing import List
 from pathlib import Path
 import os
+import sys
 
-from database import get_db
+from database import get_db, engine, Base
 from models import User, Deck, Card, CardReview, StudySession
 from schemas import (
     CardCreate, CardResponse, DeckCreate, DeckUpdate, DeckResponse,
@@ -17,6 +18,28 @@ from schemas import (
 )
 from parser import parse_html_file
 from srs_engine import sm2_engine
+
+# Initialize database schema
+try:
+    from alembic.config import Config
+    from alembic.command import upgrade as alembic_upgrade
+    
+    def run_migrations():
+        """Run Alembic migrations automatically on startup."""
+        try:
+            alembic_config = Config(str(Path(__file__).parent / "alembic.ini"))
+            alembic_config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL", f"sqlite:///{Path(__file__).parent.parent / 'flashcard_hub.db'}"))
+            alembic_upgrade(alembic_config, "head")
+            print("✅ Database migrations completed")
+        except Exception as e:
+            print(f"⚠️ Migration warning: {e}")
+    
+    # Run migrations on startup
+    run_migrations()
+except ImportError:
+    print("⚠️ Alembic not available, skipping migrations")
+    # Fallback: create all tables (only for development)
+    Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
 app = FastAPI(
