@@ -29,24 +29,24 @@ function App() {
         {/* Navigation Bar */}
         <nav className="bg-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            <div className="flex flex-wrap justify-between items-center py-4 gap-4">
+              <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <span className="text-xl sm:text-2xl font-bold text-blue-600 bg-clip-text">
                   🎓 Flashcard Hub
                 </span>
-              </div>
-              <div className="flex gap-6 items-center">
-                <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium">
+              </Link>
+              <div className="flex flex-wrap gap-4 sm:gap-6 items-center">
+                <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base">
                   Bộ Deck
                 </Link>
-                <Link to="/create" className="text-gray-700 hover:text-blue-600 font-medium">
+                <Link to="/create" className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base">
                   Tạo Deck
                 </Link>
-                <Link to="/upload" className="text-gray-700 hover:text-blue-600 font-medium">
+                <Link to="/upload" className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base">
                   Tải Lên
                 </Link>
                 {userProgress && (
-                  <div className="text-sm text-gray-600 bg-blue-100 px-3 py-1 rounded">
+                  <div className="text-xs sm:text-sm text-gray-600 bg-blue-100 px-2 sm:px-3 py-1 rounded whitespace-nowrap">
                     Đã ôn: {userProgress.total_cards_reviewed}
                   </div>
                 )}
