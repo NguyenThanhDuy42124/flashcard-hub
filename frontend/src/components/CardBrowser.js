@@ -32,6 +32,12 @@ const CardBrowser = () => {
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [bulkHtml, setBulkHtml] = useState('');
   const [quizAnswers, setQuizAnswers] = useState({});
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editCard, setEditCard] = useState(null);
+  const [editForm, setEditForm] = useState({ front: '', back: '', title: '', chapter: '' });
+  const [editOptions, setEditOptions] = useState([]);
+  const [editCorrect, setEditCorrect] = useState('');
+  const [editExplanation, setEditExplanation] = useState('');
   const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
 
   useEffect(() => {
@@ -182,6 +188,95 @@ const CardBrowser = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openEditModal = (card) => {
+    const quizMeta = parseQuizMeta(card);
+    setEditCard(card);
+    if (quizMeta) {
+      setEditForm({
+        front: card.front || '',
+        back: '',
+        title: card.title || card.front || '',
+        chapter: card.chapter || '',
+      });
+      const entries = Object.entries(quizMeta.options || {});
+      setEditOptions(entries.map(([key, text]) => ({ key, text })));
+      setEditCorrect(quizMeta.correct || '');
+      setEditExplanation(quizMeta.explanation || '');
+    } else {
+      setEditForm({
+        front: card.front || '',
+        back: card.back || '',
+        title: card.title || '',
+        chapter: card.chapter || '',
+      });
+      setEditOptions([]);
+      setEditCorrect('');
+      setEditExplanation('');
+    }
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateCard = async () => {
+    if (!editCard) return;
+    try {
+      setLoading(true);
+      const quizMeta = parseQuizMeta(editCard);
+      let payload;
+
+      if (quizMeta) {
+        const optionsObject = {};
+        editOptions.forEach((opt, idx) => {
+          const key = (opt.key || String.fromCharCode(65 + idx)).trim() || String.fromCharCode(65 + idx);
+          optionsObject[key] = opt.text || '';
+        });
+        const meta = {
+          type: 'quiz',
+          options: optionsObject,
+          correct: editCorrect,
+          explanation: editExplanation,
+        };
+        payload = {
+          front: editForm.front.trim(),
+          back: '__QUIZ__::' + JSON.stringify(meta),
+          title: editForm.front.trim() || null,
+          chapter: editForm.chapter || null,
+        };
+      } else {
+        payload = {
+          front: editForm.front.trim(),
+          back: editForm.back.trim(),
+          title: editForm.title.trim() || null,
+          chapter: editForm.chapter || null,
+        };
+      }
+
+      await cardsAPI.updateCard(editCard.id, payload);
+      setCards(prev => prev.map(c => (c.id === editCard.id ? { ...c, ...payload } : c)));
+      setIsEditOpen(false);
+      setEditCard(null);
+    } catch (err) {
+      alert('Lỗi khi cập nhật thẻ: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditOptionChange = (index, field, value) => {
+    setEditOptions(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const addEditOption = () => {
+    setEditOptions(prev => [...prev, { key: String.fromCharCode(65 + prev.length), text: '' }]);
+  };
+
+  const removeEditOption = (index) => {
+    setEditOptions(prev => prev.filter((_, i) => i !== index));
   };
 
   if (loading) {
@@ -406,7 +501,6 @@ const CardBrowser = () => {
                 const quizMeta = parseQuizMeta(card);
                 const userAnswer = quizAnswers[card.id];
                 const isAnswered = !!userAnswer;
-                const isCorrect = quizMeta && isAnswered && userAnswer === quizMeta.correct;
 
                 const optionClass = (key) => {
                   const base = 'w-full text-left p-4 rounded-xl border-2 transition-all duration-150 flex items-start gap-3 font-semibold shadow-sm';
@@ -537,7 +631,17 @@ const CardBrowser = () => {
                         <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold uppercase tracking-wide">
                           Chương {card.chapter || '1'}
                         </span>
-                        <span className="text-slate-400 font-semibold">Câu hỏi #{idx + 1}</span>
+                        <div className="flex items-center gap-3 text-slate-400 font-semibold">
+                          <span>Câu hỏi #{idx + 1}</span>
+                          {isAdmin && (
+                            <button
+                              onClick={() => openEditModal(card)}
+                              className="text-blue-500 hover:text-blue-700 text-xs font-bold"
+                            >
+                              ✎ Sửa
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       <h3 className="text-[18px] md:text-xl font-bold text-slate-900 leading-relaxed">
@@ -558,23 +662,29 @@ const CardBrowser = () => {
                         ))}
                       </div>
 
-                      {isAnswered && (
-                        <div className={`mt-2 p-4 sm:p-5 border rounded-xl animate-slide-down shadow-[0_12px_30px_-18px_rgba(0,0,0,0.25)] ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
-                          <div className="flex items-start gap-3">
-                            <div className={`mt-1 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${isCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                            </div>
-                            <div className="space-y-1">
-                              <div className={`text-sm font-extrabold uppercase tracking-wide ${isCorrect ? 'text-emerald-700' : 'text-amber-700'}`}>
-                                {isCorrect ? 'Tuyệt vời! Giải thích chi tiết:' : 'Rất tiếc! Cùng xem giải thích nhé:'}
-                              </div>
-                              <p className="text-slate-700 leading-relaxed text-[15px]">{quizMeta.explanation || 'Không có giải thích.'}</p>
-                              {!isCorrect && quizMeta.correct && (
-                                <p className="text-slate-600 text-sm mt-1">Đáp án đúng: {quizMeta.correct}</p>
-                              )}
-                            </div>
+                        {isAdmin && (
+                          <div className="absolute top-4 right-16 flex gap-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedCards.has(card.id)}
+                              onChange={(e) => toggleSelectCard(card.id, e)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-5 h-5 cursor-pointer accent-red-500"
+                            />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openEditModal(card); }}
+                              className="text-blue-500 hover:text-blue-700 bg-blue-50 rounded px-2 text-xs"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteCard(card.id, e)}
+                              className="text-red-500 hover:text-red-700 bg-red-50 rounded px-2 text-xs"
+                            >
+                              Xóa
+                            </button>
                           </div>
-                        </div>
+                        )}
                       )}
                     </div>
                   </div>
@@ -725,6 +835,140 @@ const CardBrowser = () => {
         onCardCreated={handleCardCreated}
         chapters={chapters.filter(ch => ch !== 'Tất cả')}
       />
+
+      {/* Edit Card Modal */}
+      {isEditOpen && editCard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">✎ Chỉnh sửa thẻ</h3>
+              <button onClick={() => setIsEditOpen(false)} className="text-gray-500 hover:text-gray-700 text-xl">×</button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Tiêu đề (optional)</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập tiêu đề"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Chương</label>
+                <input
+                  type="text"
+                  value={editForm.chapter}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, chapter: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="VD: Chương 1"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Câu hỏi / Mặt trước</label>
+              <textarea
+                value={editForm.front}
+                onChange={(e) => setEditForm(prev => ({ ...prev, front: e.target.value }))}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {!parseQuizMeta(editCard) && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Mặt sau</label>
+                <textarea
+                  value={editForm.back}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, back: e.target.value }))}
+                  rows={5}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+
+            {parseQuizMeta(editCard) && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Phương án</label>
+                  {editOptions.map((opt, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={opt.key}
+                        onChange={(e) => handleEditOptionChange(idx, 'key', e.target.value)}
+                        className="w-16 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder={String.fromCharCode(65 + idx)}
+                      />
+                      <input
+                        type="text"
+                        value={opt.text}
+                        onChange={(e) => handleEditOptionChange(idx, 'text', e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Nội dung đáp án"
+                      />
+                      <button
+                        onClick={() => removeEditOption(idx)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={addEditOption}
+                    className="px-3 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 text-sm"
+                  >
+                    + Thêm phương án
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">Đáp án đúng</label>
+                    <input
+                      type="text"
+                      value={editCorrect}
+                      onChange={(e) => setEditCorrect(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="A / B / 1 / 2 ..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">Giải thích</label>
+                    <input
+                      type="text"
+                      value={editExplanation}
+                      onChange={(e) => setEditExplanation(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Tùy chọn"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsEditOpen(false)}
+                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleUpdateCard}
+                className={`px-5 py-2 rounded-lg text-white font-semibold ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                disabled={loading}
+              >
+                Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isBulkAddOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 min-p-4">

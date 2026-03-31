@@ -53,6 +53,15 @@ def try_parse_raw_json(payload: str) -> Optional[Union[List[Any], Dict[str, Any]
     return None
 
 
+def find_json_array_in_text(text: str) -> Optional[str]:
+    """Locate a JSON array block inside free-form text (e.g., prompt + JSON)."""
+    # Non-greedy search for an array of objects
+    match = re.search(r"\[\s*\{[\s\S]*?\}\s*\]", text)
+    if match:
+        return match.group(0)
+    return None
+
+
 def parse_cards_json(json_input: Union[str, List[Any], Dict[str, Any]]) -> Dict[str, Any]:
     """
     Parse and validate cards JSON payload.
@@ -189,9 +198,14 @@ def parse_html_file(html_content: str) -> Dict[str, Any]:
     if direct_payload is not None:
         parsed = parse_cards_json(direct_payload)
     else:
-        # 2) Extract JSON from HTML <script>
-        json_str = extract_json_from_html(html_content)
-        parsed = parse_cards_json(json_str)
+        # 2) Try to locate a JSON array inside arbitrary pasted text
+        json_block = find_json_array_in_text(html_content)
+        if json_block:
+            parsed = parse_cards_json(json_block)
+        else:
+            # 3) Extract JSON from HTML <script>
+            json_str = extract_json_from_html(html_content)
+            parsed = parse_cards_json(json_str)
     cards = parsed["cards"]
     detected_type = parsed.get("detected_type", "flashcard")
 
