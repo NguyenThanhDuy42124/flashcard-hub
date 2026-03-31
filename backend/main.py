@@ -2,7 +2,6 @@
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import List
