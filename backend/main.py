@@ -76,13 +76,19 @@ async def list_decks(
     tag: str = Query(None)
 ):
     """List all public decks with pagination and filtering."""
-    query = db.query(Deck).filter(Deck.is_public == True)
+    try:
+        query = db.query(Deck).filter(Deck.is_public == True)
 
-    if tag:
-        query = query.filter(Deck.tag == tag)
+        if tag:
+            query = query.filter(Deck.tag == tag)
 
-    decks = query.offset(skip).limit(limit).all()
-    return decks
+        decks = query.offset(skip).limit(limit).all()
+        return decks
+    except Exception as e:
+        print(f"Error loading decks: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error loading decks: {str(e)}")
 
 
 @app.post("/api/decks/create", response_model=DeckResponse)
