@@ -31,7 +31,7 @@ function App() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap justify-between items-center py-4 gap-4">
               <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <span className="text-xl sm:text-2xl font-bold text-blue-600 bg-clip-text">
+                <span className="text-xl sm:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                   🎓 Flashcard Hub
                 </span>
               </Link>
