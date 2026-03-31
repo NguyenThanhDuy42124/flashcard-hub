@@ -1,5 +1,5 @@
 """FastAPI main application with all routes."""
-from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Query
+from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -8,6 +8,9 @@ from typing import List
 from pathlib import Path
 import os
 import sys
+import logging
+from rich.logging import RichHandler
+from rich.console import Console
 
 from database import get_db, engine, Base
 from models import User, Deck, Card, CardReview, StudySession
@@ -18,6 +21,15 @@ from schemas import (
 )
 from parser import parse_html_file
 from srs_engine import sm2_engine
+
+# Setup Rich logging with colors
+console = Console()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    handlers=[RichHandler(console=console, rich_tracebacks=True)]
+)
+logger = logging.getLogger("flashcard_hub")
 
 # Initialize database schema
 try:
@@ -30,14 +42,14 @@ try:
             alembic_config = Config(str(Path(__file__).parent / "alembic.ini"))
             alembic_config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL", f"sqlite:///{Path(__file__).parent.parent / 'flashcard_hub.db'}"))
             alembic_upgrade(alembic_config, "head")
-            print("✅ Database migrations completed")
+            logger.info("✅ Database migrations completed")
         except Exception as e:
-            print(f"⚠️ Migration warning: {e}")
+            logger.warning(f"⚠️ Migration warning: {e}")
     
     # Run migrations on startup
     run_migrations()
 except ImportError:
-    print("⚠️ Alembic not available, skipping migrations")
+    logger.warning("⚠️ Alembic not available, skipping migrations")
     # Fallback: create all tables (only for development)
     Base.metadata.create_all(bind=engine)
 
@@ -56,6 +68,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add colored HTTP logging middleware
+@app.middleware("http")
+async def log_http_requests(request: Request, call_next):
+    """Log HTTP requests with colored output."""
+    import time
+    start_time = time.time()
+    method = request.method
+    path = request.url.path
+    client = request.client.host if request.client else "unknown"
+    
+    response = await call_next(request)
+    
+    process_time = time.time() - start_time
+    status_code = response.status_code
+    
+    # Color code status
+    if status_code == 200:
+        status_emoji = "✅"
+    elif 300 <= status_code < 400:
+        status_emoji = "🔀"
+    elif 400 <= status_code < 500:
+        status_emoji = "⚠️"
+    else:
+        status_emoji = "❌"
+    
+    logger.info(
+        f"{status_emoji} {client} - \"{method} {path} HTTP/1.1\" {status_code} ({process_time:.3f}s)"
+    )
+    return response
 
 # Add response headers for insecure context
 @app.middleware("http")
@@ -77,12 +119,20 @@ async def list_decks(
 ):
     """List all public decks with pagination and filtering."""
     try:
+        logger.info(f"📋 Fetching decks: skip={skip}, limit={limit}, tag={tag}")
+        
         query = db.query(Deck).filter(Deck.is_public == True)
 
         if tag:
             query = query.filter(Deck.tag == tag)
 
         decks = query.offset(skip).limit(limit).all()
+        logger.info(f"✅ Found {len(decks)} public decks")
+        
+        # Log deck details
+        for deck in decks:
+            logger.debug(f"  - Deck: {deck.title} (ID: {deck.id}, Cards: {len(deck.cards)})")
+        
         return decks
     except Exception as e:
         print(f"Error loading decks: {e}")
@@ -543,6 +593,41 @@ async def get_user_progress(
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/api/server/status")
+async def server_status(db: Session = Depends(get_db)):
+    """Get detailed server status with database information."""
+    try:
+        logger.info("📊 Server status requested")
+        
+        # Get database statistics
+        total_decks = db.query(Deck).count()
+        total_cards = db.query(Card).count()
+        total_users = db.query(User).count()
+        public_decks = db.query(Deck).filter(Deck.is_public == True).count()
+        
+        status_data = {
+            "status": "operational",
+            "timestamp": datetime.utcnow().isoformat(),
+            "database": {
+                "total_users": total_users,
+                "total_decks": total_decks,
+                "public_decks": public_decks,
+                "total_cards": total_cards,
+            },
+            "version": "1.0.0"
+        }
+        
+        logger.info(
+            f"✅ Server status: {total_decks} decks, "
+            f"{total_cards} cards, {total_users} users"
+        )
+        
+        return status_data
+    except Exception as e:
+        logger.error(f"❌ Error getting server status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting server status: {str(e)}")
 
 
 # Mount frontend React build - serve static files (at END to not block /api routes!)
