@@ -20,28 +20,20 @@ def extract_json_from_html(html_content: str) -> str:
     # Parse HTML
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    # Find script tag with type="text/babel"
-    script_tag = soup.find('script', {'type': 'text/babel'})
+    script_tags = soup.find_all('script')
 
-    if not script_tag:
-        raise ValueError("No <script type='text/babel'> tag found in HTML")
+    script_content = None
+    for tag in script_tags:
+        if tag.string and ('cardsData' in tag.string or 'flashcardsData' in tag.string or 'const' in tag.string):
+            # Try to find array assignment (const/let/var flashcardsData = [{...}])
+            pattern = r'(?:const|let|var)\s+\w+\s*=\s*(\s*\[\s*(?:/\*[\s\S]*?\*/|//[^\n]*\n|\s)*\{[\s\S]*?\}\s*\])\s*;'
+            match = re.search(pattern, tag.string)
+            if match:
+                script_content = tag.string
+                json_str = match.group(1)
+                return json_str
 
-    script_content = script_tag.string
-
-    if not script_content:
-        raise ValueError("Script tag is empty")
-
-    # Try to find array assignment (const/let/var flashcardsData = [{...}])
-    # Handles potential JS comments inside the array structure before the first object
-    pattern = r'(?:const|let|var)\s+\w+\s*=\s*(\s*\[\s*(?:/\*[\s\S]*?\*/|//[^\n]*\n|\s)*\{[\s\S]*?\}\s*\])\s*;'
-    match = re.search(pattern, script_content)
-
-    if not match:
-        raise ValueError("Could not find an array of objects structure in script")
-
-    json_str = match.group(1)
-    
-    return json_str
+    raise ValueError("Could not find an array of objects structure in any <script> tag")
 
 
 def parse_cards_json(json_str: str) -> List[Dict[str, str]]:
