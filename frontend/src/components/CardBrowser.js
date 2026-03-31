@@ -434,21 +434,20 @@ const CardBrowser = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               {filteredCards.map((card, idx) => {
                 const quizMeta = parseQuizMeta(card);
-                if (!quizMeta) return null;
                 const userAnswer = quizAnswers[card.id];
                 const isAnswered = !!userAnswer;
-                const isCorrect = isAnswered && userAnswer === quizMeta.correct;
+                const isCorrect = quizMeta && isAnswered && userAnswer === quizMeta.correct;
 
                 const optionClass = (key) => {
                   const base = 'w-full text-left p-4 rounded-xl border-2 transition-all flex items-start gap-3 font-medium';
-                  if (!isAnswered) return `${base} border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 text-slate-700`;
+                  if (!quizMeta || !isAnswered) return `${base} border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 text-slate-700`;
                   if (key === quizMeta.correct) return `${base} border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm`;
                   if (key === userAnswer) return `${base} border-rose-500 bg-rose-50 text-rose-800 shadow-sm`;
                   return `${base} border-slate-100 bg-slate-50 text-slate-400 opacity-60`;
                 };
 
                 const optionIcon = (key) => {
-                  if (!isAnswered) return (
+                  if (!quizMeta || !isAnswered) return (
                     <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-slate-100 text-slate-500 rounded-lg text-sm font-bold">
                       {key}
                     </span>
@@ -467,6 +466,99 @@ const CardBrowser = () => {
                     <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-slate-200 text-slate-400 rounded-lg text-sm font-bold">{key}</span>
                   );
                 };
+
+                if (!quizMeta) {
+                  // Fallback: render as flashcard if quiz metadata missing
+                  const isFlipped = flippedCards[card.id];
+                  const bgGradient = gradients[card.id % gradients.length];
+                  return (
+                    <div
+                      key={card.id}
+                      onClick={() => toggleFlip(card.id)}
+                      className="h-[450px] cursor-pointer perspective"
+                    >
+                      <div
+                        className={`relative w-full h-full transition-transform duration-500 transform-gpu ${
+                          isFlipped ? 'scale-x-[-1]' : ''
+                        }`}
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                        }}
+                      >
+                        <div
+                          className="absolute w-full h-full bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center text-center border border-gray-200 hover:shadow-xl transition-shadow hover:border-blue-300"
+                          style={{ backfaceVisibility: 'hidden' }}
+                        >
+                          {card.chapter && (
+                            <div className="absolute top-4 left-4 bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                              {card.chapter}
+                            </div>
+                          )}
+                          {isAdmin && (
+                            <div className="absolute top-4 right-16 flex gap-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedCards.has(card.id)}
+                                onChange={(e) => toggleSelectCard(card.id, e)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-5 h-5 cursor-pointer accent-red-500"
+                              />
+                              <button
+                                onClick={(e) => handleDeleteCard(card.id, e)}
+                                className="text-red-500 hover:text-red-700 bg-red-50 rounded px-2 text-xs"
+                              >
+                                Xóa
+                              </button>
+                            </div>
+                          )}
+                          <span className="absolute top-4 right-4 text-gray-300 font-mono">#{card.id}</span>
+                          <h2 className="text-sm font-semibold text-gray-500 mb-2 mt-4 max-h-10 overflow-hidden line-clamp-2">
+                            {card.title || 'Câu hỏi'}
+                          </h2>
+                          <h3 className="text-xl md:text-2xl font-bold text-gray-800 leading-snug flex-1 flex items-center">{card.front}</h3>
+                          <div className="absolute bottom-5 flex items-center text-blue-500 text-sm font-medium animate-pulse">
+                            <span>Nhấn để lật xem chi tiết</span>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`absolute w-full h-full bg-gradient-to-br ${bgGradient} text-white rounded-2xl shadow-xl p-6 flex flex-col overflow-hidden`}
+                          style={{
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateY(180deg)',
+                          }}
+                        >
+                          <div className="border-b border-white/20 pb-2 mb-3 flex justify-between items-center shrink-0">
+                            <span className="text-sm font-bold text-white/80 uppercase tracking-widest">{card.chapter || 'Chương'}</span>
+                            <span className="text-xs bg-white/20 px-2 py-1 rounded-md">Đáp án</span>
+                          </div>
+                          <div className="flex-1 overflow-y-auto text-[15px] leading-relaxed custom-scrollbar text-left pr-2">
+                            {typeof card.back === 'string' && card.back.includes('\n') ? (
+                              <ul className="space-y-3">
+                                {card.back.split('\n').map((line, lineIdx) => (
+                                  <li key={lineIdx} className="flex items-start text-[15px] leading-relaxed">
+                                    {line.startsWith('-') ? (
+                                      <>
+                                        <span className="mr-2 mt-1.5 w-1.5 h-1.5 bg-white/70 rounded-full shrink-0"></span>
+                                        <span className="text-white/95">{line.substring(1).trim()}</span>
+                                      </>
+                                    ) : (
+                                      <span className="font-semibold text-white">{line}</span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-white/95">{card.back}</p>
+                            )}
+                          </div>
+                          <div className="text-xs text-center text-white/50 mt-3 pt-2 border-t border-white/10 shrink-0">Nhấn để xem câu hỏi</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
 
                 return (
                   <div key={card.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
