@@ -73,27 +73,20 @@ def parse_cards_json(json_str: str) -> Dict[str, Any]:
             question_text = str(card.get('question', '')).strip()
             options_obj = card.get('options', {}) or {}
             # Build options as multiline string for front
-            option_lines = []
-            for key, val in options_obj.items():
-                option_lines.append(f"{key}. {val}")
-            options_block = "\n".join(option_lines)
             correct = str(card.get('correctAnswer', '')).strip()
             explanation = str(card.get('explanation', '')).strip()
-
-            front_text = question_text
-            if options_block:
-                front_text = f"{question_text}\n\n{options_block}"
-
-            back_lines = []
-            if correct:
-                back_lines.append(f"Đáp án đúng: {correct}")
-            if explanation:
-                back_lines.append(explanation)
-            back_text = "\n\n".join(back_lines).strip() or "Không có giải thích"
+            # Store quiz metadata in back as JSON for frontend to render MCQ
+            meta_payload = {
+                "type": "quiz",
+                "options": options_obj,
+                "correct": correct,
+                "explanation": explanation,
+            }
+            back_text = "__QUIZ__::" + json.dumps(meta_payload, ensure_ascii=False)
 
             validated_cards.append({
                 'id': str(card.get('id', idx + 1)),
-                'front': front_text,
+                'front': question_text,
                 'back': back_text,
                 'category': str(card.get('category', 'Quiz')),
                 'title': question_text or None,

@@ -31,6 +31,7 @@ const CardBrowser = () => {
   const [newTag, setNewTag] = useState('');
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [bulkHtml, setBulkHtml] = useState('');
+  const [quizAnswers, setQuizAnswers] = useState({});
   const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
 
   useEffect(() => {
@@ -75,6 +76,26 @@ const CardBrowser = () => {
                         (card.title && card.title.toLowerCase().includes(searchTerm.toLowerCase()));
     return chapterMatch && searchMatch;
   });
+
+  const parseQuizMeta = (card) => {
+    if (!card.back || typeof card.back !== 'string') return null;
+    if (!card.back.startsWith('__QUIZ__::')) return null;
+    try {
+      const payload = card.back.replace('__QUIZ__::', '');
+      const meta = JSON.parse(payload);
+      if (meta.type !== 'quiz') return null;
+      return meta;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const handleQuizSelect = (cardId, optionKey) => {
+    setQuizAnswers(prev => {
+      if (prev[cardId]) return prev; // lock after first answer
+      return { ...prev, [cardId]: optionKey };
+    });
+  };
 
   const toggleFlip = (cardId) => {
     setFlippedCards(prev => ({
@@ -391,6 +412,61 @@ const CardBrowser = () => {
             {filteredCards.map((card) => {
               const isFlipped = flippedCards[card.id];
               const bgGradient = gradients[card.id % gradients.length];
+              const quizMeta = deck.tag === 'Quiz' ? parseQuizMeta(card) : null;
+
+              if (deck.tag === 'Quiz' && quizMeta) {
+                const selected = quizAnswers[card.id];
+                const isCorrect = selected && selected === quizMeta.correct;
+                return (
+                  <div key={card.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
+                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-blue-700 uppercase">{card.chapter || 'Chung'}</span>
+                      <span className="text-xs text-slate-500">ID #{card.id}</span>
+                    </div>
+                    <div className="p-5 space-y-4">
+                      <h3 className="text-lg font-bold text-slate-900 leading-relaxed">{card.front}</h3>
+                      <div className="space-y-2">
+                        {Object.entries(quizMeta.options || {}).map(([key, text]) => {
+                          const picked = selected === key;
+                          const correct = quizMeta.correct === key;
+                          let styles = 'w-full text-left p-3 rounded-xl border-2 transition flex gap-3 items-center';
+                          if (!selected) {
+                            styles += ' border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50';
+                          } else if (correct) {
+                            styles += ' border-emerald-500 bg-emerald-50 text-emerald-800';
+                          } else if (picked && !correct) {
+                            styles += ' border-rose-500 bg-rose-50 text-rose-700';
+                          } else {
+                            styles += ' border-slate-100 bg-slate-50 text-slate-400';
+                          }
+                          return (
+                            <button
+                              key={key}
+                              disabled={!!selected}
+                              onClick={() => handleQuizSelect(card.id, key)}
+                              className={styles}
+                            >
+                              <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-600 font-bold">
+                                {key}
+                              </span>
+                              <span className="text-sm md:text-base leading-relaxed">{text}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {selected && (
+                        <div className={`mt-2 p-4 rounded-xl border ${isCorrect ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'} animate-slide-down`}>
+                          <div className="text-sm font-semibold mb-1">{isCorrect ? 'Tuyệt vời! Đúng đáp án.' : 'Sai rồi, xem giải thích:'}</div>
+                          <div className="text-sm leading-relaxed text-slate-700">{quizMeta.explanation || 'Không có giải thích.'}</div>
+                          {quizMeta.correct && !isCorrect && (
+                            <div className="text-sm mt-2 text-slate-600">Đáp án đúng: {quizMeta.correct}</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
 
               return (
                 <div
