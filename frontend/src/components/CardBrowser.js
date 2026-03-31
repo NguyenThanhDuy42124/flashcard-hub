@@ -439,11 +439,11 @@ const CardBrowser = () => {
                 const isCorrect = quizMeta && isAnswered && userAnswer === quizMeta.correct;
 
                 const optionClass = (key) => {
-                  const base = 'w-full text-left p-4 rounded-xl border-2 transition-all flex items-start gap-3 font-medium';
-                  if (!quizMeta || !isAnswered) return `${base} border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 text-slate-700`;
-                  if (key === quizMeta.correct) return `${base} border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm`;
-                  if (key === userAnswer) return `${base} border-rose-500 bg-rose-50 text-rose-800 shadow-sm`;
-                  return `${base} border-slate-100 bg-slate-50 text-slate-400 opacity-60`;
+                  const base = 'w-full text-left p-4 rounded-xl border-2 transition-all duration-150 flex items-start gap-3 font-semibold shadow-sm';
+                  if (!quizMeta || !isAnswered) return `${base} border-slate-200 bg-white hover:-translate-y-0.5 hover:border-blue-400 hover:bg-blue-50 text-slate-800`;
+                  if (key === quizMeta.correct) return `${base} border-emerald-500 bg-emerald-50 text-emerald-800 translate-y-0 cursor-default`;
+                  if (key === userAnswer) return `${base} border-rose-500 bg-rose-50 text-rose-800 translate-y-0 cursor-default`;
+                  return `${base} border-slate-100 bg-slate-50 text-slate-400 opacity-70 cursor-not-allowed`;
                 };
 
                 const optionIcon = (key) => {
@@ -453,7 +453,7 @@ const CardBrowser = () => {
                     </span>
                   );
                   if (key === quizMeta.correct) return (
-                    <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-emerald-500 text-white rounded-lg text-sm font-bold">
+                    <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-emerald-500 text-white rounded-lg text-sm font-bold animate-bounce">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </span>
                   );
@@ -568,7 +568,7 @@ const CardBrowser = () => {
                     </div>
 
                     <div className="p-5 space-y-4">
-                      <h3 className="text-xl font-bold text-slate-900 leading-relaxed">
+                      <h3 className="text-[18px] md:text-xl font-bold text-slate-900 leading-relaxed">
                         {card.front}
                       </h3>
 
@@ -587,7 +587,7 @@ const CardBrowser = () => {
                       </div>
 
                       {isAnswered && (
-                        <div className={`px-4 py-4 border rounded-xl ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                        <div className={`px-5 py-4 border-t animate-slide-down ${isCorrect ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-200'}`}>
                           <div className="flex items-start gap-3">
                             <div className={`mt-1 flex-shrink-0 ${isCorrect ? 'text-emerald-500' : 'text-amber-500'}`}>
                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
