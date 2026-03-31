@@ -47,6 +47,49 @@ port = "25297"
 # Change to backend directory for proper imports
 os.chdir(os.path.join(project_root, "backend"))
 
+import json
+
+# Create custom uvicorn log config
+log_config = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "access": {
+            "()": "uvicorn.logging.AccessFormatter",
+            "fmt": "%(asctime)s %(levelname)s uvicorn.access: %(client_addr)s - \"%(request_line)s\" %(status_code)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "use_colors": False
+        },
+        "default": {
+            "()": "uvicorn.logging.DefaultFormatter",
+            "fmt": "%(asctime)s %(levelname)s uvicorn.error: %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "use_colors": False
+        },
+    },
+    "handlers": {
+        "access": {
+            "formatter": "access",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout"
+        },
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr"
+        }
+    },
+    "loggers": {
+        "uvicorn": {"handlers": ["default"], "level": "INFO"},
+        "uvicorn.error": {"level": "INFO"},
+        "uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": False},
+    }
+}
+
+log_config_path = os.path.join(project_root, "backend", "log_config.json")
+with open(log_config_path, "w") as f:
+    json.dump(log_config, f)
+
 # Start FastAPI server
 print(f"🚀 Starting Flashcard Hub API on port {port}...")
 subprocess.call([
@@ -54,4 +97,5 @@ subprocess.call([
     "main:app",
     "--host", "0.0.0.0",
     "--port", str(port),
+    "--log-config", log_config_path
 ])

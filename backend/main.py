@@ -163,36 +163,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add colored HTTP logging middleware
-@app.middleware("http")
-async def log_http_requests(request: Request, call_next):
-    """Log HTTP requests with colored output."""
-    import time
-    start_time = time.time()
-    method = request.method
-    path = request.url.path
-    client = request.client.host if request.client else "unknown"
-    
-    response = await call_next(request)
-    
-    process_time = time.time() - start_time
-    status_code = response.status_code
-    
-    # Color code status
-    if status_code == 200:
-        status_emoji = "✅"
-    elif 300 <= status_code < 400:
-        status_emoji = "🔀"
-    elif 400 <= status_code < 500:
-        status_emoji = "⚠️"
-    else:
-        status_emoji = "❌"
-    
-    logger.info(
-        f"{status_emoji} {client} - \"{method} {path} HTTP/1.1\" {status_code} ({process_time:.3f}s)"
-    )
-    return response
-
 # Add response headers for insecure context
 @app.middleware("http")
 async def add_secure_headers(request, call_next):
@@ -769,7 +739,44 @@ print(f"🔍 Frontend build path: {frontend_build}")
 print(f"🔍 Frontend build exists: {frontend_build.exists()}")
 if frontend_build.exists():
     print(f"🔍 Frontend build contents: {list(frontend_build.iterdir())[:5]}")
-    app.mount("/", StaticFiles(directory=str(frontend_build), html=True), name="frontend")
+    
+    from fastapi.responses import FileResponse
+    import mimetypes
+    
+    # Static files specifically for JS/CSS assets
+    static_dir = frontend_build / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    
+    # SPA Catch-all exceptions handler for cleaner 404s
+    from fastapi.responses import JSONResponse
+    
+    @app.exception_handler(404)
+    async def custom_404_handler(request: Request, exc: HTTPException):
+        if request.method == "GET" and not request.url.path.startswith("/api/"):
+            index_path = frontend_build / "index.html"
+            if index_path.exists():
+                return FileResponse(str(index_path), media_type="text/html")
+        return JSONResponse(status_code=404, content={"detail": getattr(exc, "detail", "Not Found")})
+
+    # Catch-all route for SPA
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(request: Request, full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+
+        # Fallback to files in the root of build
+        file_path = frontend_build / full_path
+        if file_path.is_file():
+            # Get the correct MIME type
+            mime_type, _ = mimetypes.guess_type(str(file_path))
+            return FileResponse(str(file_path), media_type=mime_type)
+
+        index_path = frontend_build / "index.html"
+        if index_path.exists():
+            return FileResponse(str(index_path), media_type="text/html")
+        raise HTTPException(status_code=404, detail="Index.html not found")
+
     print(f"✅ Frontend mounted successfully at /")
 else:
     print(f"❌ Frontend build not found at {frontend_build}")
