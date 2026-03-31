@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { decksAPI } from '../api';
 
 const DeckList = () => {
@@ -8,7 +9,14 @@ const DeckList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState(null);
   const [tags, setTags] = useState([]);
+  const [isQuickOpen, setIsQuickOpen] = useState(false);
+  const [quickName, setQuickName] = useState('');
+  const [quickDesc, setQuickDesc] = useState('');
+  const [quickContent, setQuickContent] = useState('');
+  const [quickLoading, setQuickLoading] = useState(false);
+  const [quickError, setQuickError] = useState(null);
   const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDecks();
@@ -46,6 +54,27 @@ const DeckList = () => {
     deck.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleQuickPaste = async () => {
+    if (!quickContent.trim()) {
+      setQuickError('Vui lòng dán nội dung JSON/HTML');
+      return;
+    }
+    try {
+      setQuickLoading(true);
+      setQuickError(null);
+      const response = await decksAPI.pasteHtmlContent(quickContent, quickName, quickDesc);
+      setIsQuickOpen(false);
+      setQuickContent('');
+      setQuickName('');
+      setQuickDesc('');
+      navigate(`/deck/${response.data.id}/cards`);
+    } catch (err) {
+      setQuickError(err.response?.data?.detail || err.message || 'Lỗi khi tạo deck');
+    } finally {
+      setQuickLoading(false);
+    }
+  };
+
   if (loading) return <div className="text-center py-8">Đang tải bộ deck...</div>;
   if (error) return <div className="text-red-600 text-center py-8">{error}</div>;
 
@@ -59,7 +88,7 @@ const DeckList = () => {
 
       {/* Search & Filter */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <div className="flex gap-4 mb-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4 mb-4">
           <input
             type="text"
             placeholder="Tìm kiếm bộ deck..."
@@ -74,6 +103,12 @@ const DeckList = () => {
             }`}
           >
             Tất Cả
+          </button>
+          <button
+            onClick={() => setIsQuickOpen(true)}
+            className="px-4 py-2 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700"
+          >
+            📥 Dán nhanh JSON/HTML
           </button>
         </div>
         
@@ -142,6 +177,76 @@ const DeckList = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Quick Paste Modal */}
+      {isQuickOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">📥 Dán nhanh JSON/HTML</h3>
+              <button onClick={() => setIsQuickOpen(false)} className="text-gray-500 hover:text-gray-700 text-xl">×</button>
+            </div>
+
+            {quickError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {quickError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Tên Deck (tùy chọn)</label>
+                <input
+                  type="text"
+                  value={quickName}
+                  onChange={(e) => setQuickName(e.target.value)}
+                  placeholder="VD: Chương 1 - Quiz"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Mô tả (tùy chọn)</label>
+                <input
+                  type="text"
+                  value={quickDesc}
+                  onChange={(e) => setQuickDesc(e.target.value)}
+                  placeholder="VD: Batch 1 - Giới thiệu & Lịch sử"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Nội dung JSON/HTML</label>
+              <textarea
+                value={quickContent}
+                onChange={(e) => setQuickContent(e.target.value)}
+                rows={14}
+                placeholder="Dán JSON Quiz/Flashcard hoặc toàn bộ HTML có chứa dữ liệu"
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              />
+              <div className="text-xs text-gray-500">Ký tự: {quickContent.length}</div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsQuickOpen(false)}
+                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300"
+                disabled={quickLoading}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleQuickPaste}
+                className={`px-5 py-2 rounded-lg text-white font-semibold ${quickLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                disabled={quickLoading}
+              >
+                {quickLoading ? 'Đang tạo...' : 'Tạo deck mới'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
