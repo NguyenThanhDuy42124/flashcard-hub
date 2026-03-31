@@ -55,30 +55,30 @@ const CreateCardModal = ({ deckId, isOpen, onClose, onCardCreated, chapters = []
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-xl font-bold text-gray-900">Thêm Flashcard Mới</h3>
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Thêm Flashcard Mới</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 text-2xl"
           >
-            <span className="text-2xl">&times;</span>
+            <span>&times;</span>
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-96 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 max-h-96 overflow-y-auto">
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">
               {error}
             </div>
           )}
 
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Tiêu Đề Câu Hỏi *
             </label>
             <input
@@ -87,21 +87,21 @@ const CreateCardModal = ({ deckId, isOpen, onClose, onCardCreated, chapters = []
               value={formData.title}
               onChange={handleChange}
               placeholder="Nhập tiêu đề câu hỏi"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               required
             />
           </div>
 
           {/* Chapter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Chương *
             </label>
             <select
               name="chapter"
               value={formData.chapter}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               required
             >
               <option value="">-- Chọn chương --</option>
@@ -119,7 +119,7 @@ const CreateCardModal = ({ deckId, isOpen, onClose, onCardCreated, chapters = []
                 placeholder="Nhập tên chương mới"
                 value={formData.chapter}
                 onChange={handleChange}
-                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 required
               />
             )}
@@ -127,7 +127,7 @@ const CreateCardModal = ({ deckId, isOpen, onClose, onCardCreated, chapters = []
 
           {/* Front (Question) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Câu Hỏi (Mặt Trước) *
             </label>
             <textarea
@@ -136,14 +136,14 @@ const CreateCardModal = ({ deckId, isOpen, onClose, onCardCreated, chapters = []
               onChange={handleChange}
               placeholder="Nhập câu hỏi"
               rows="3"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm custom-scrollbar"
               required
             />
           </div>
 
           {/* Back (Answer) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
               Câu Trả Lời (Mặt Sau) *
             </label>
             <textarea
@@ -152,24 +152,24 @@ const CreateCardModal = ({ deckId, isOpen, onClose, onCardCreated, chapters = []
               onChange={handleChange}
               placeholder="Nhập câu trả lời"
               rows="4"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm custom-scrollbar"
               required
             />
           </div>
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+        <div className="flex items-center justify-end gap-2 sm:gap-3 p-4 sm:p-6 border-t bg-gray-50 flex-col-reverse sm:flex-row">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition"
+            className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition text-sm"
           >
             Hủy
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:bg-gray-400"
+            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:bg-gray-400 text-sm font-medium"
           >
             {loading ? 'Đang tạo...' : 'Tạo Card'}
           </button>
