@@ -56,6 +56,12 @@ class Card(Base):
     # Relationships
     deck = relationship("Deck", back_populates="cards")
     reviews = relationship("CardReview", back_populates="card", cascade="all, delete-orphan")
+    
+    def __getattr__(self, name):
+        """Handle missing columns gracefully (for backwards compatibility during migrations)."""
+        if name in ('title', 'chapter'):
+            return None
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
 
 class StudySession(Base):
