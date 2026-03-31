@@ -25,7 +25,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
         {/* Navigation Bar */}
         <nav className="bg-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -56,7 +56,7 @@ function App() {
         </nav>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
             <Route path="/" element={<DeckList />} />
             <Route path="/create" element={<DeckBuilder />} />
@@ -66,7 +66,7 @@ function App() {
         </main>
 
         {/* Footer */}
-        <footer className="bg-gray-800 text-white text-center py-4 mt-12">
+        <footer className="bg-gray-800 text-white text-center py-4 mt-auto">
           <p>Flashcard Hub © 2026 - Nền tảng học tập tương tác với SRS</p>
         </footer>
       </div>

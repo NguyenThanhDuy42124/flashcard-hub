@@ -31,12 +31,12 @@ def extract_json_from_html(html_content: str) -> str:
     if not script_content:
         raise ValueError("Script tag is empty")
 
-    # Use regex to extract cardsData JSON array
-    pattern = r'const\s+cardsData\s*=\s*(\[[\s\S]*?\]);'
+    # Try to find array assignment (const/let/var cardsData = [...])
+    pattern = r'=\s*(\[[\s\S]*\])\s*;?'
     match = re.search(pattern, script_content)
 
     if not match:
-        raise ValueError("Could not find cardsData array in script")
+        raise ValueError("Could not find array structure in script")
 
     json_str = match.group(1)
     

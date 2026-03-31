@@ -23,6 +23,7 @@ const CardBrowser = () => {
   const [chapters, setChapters] = useState([]);
   const [flippedCards, setFlippedCards] = useState({});
   const [sortBy, setSortBy] = useState('chapter');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -60,9 +61,13 @@ const CardBrowser = () => {
     fetchDeckAndCards();
   }, [deckId, sortBy, selectedChapter]);
 
-  const filteredCards = selectedChapter === 'Tất cả' 
-    ? cards 
-    : cards.filter(card => (card.chapter || 'General') === selectedChapter);
+  const filteredCards = cards.filter(card => {
+    const chapterMatch = selectedChapter === 'Tất cả' || (card.chapter || 'General') === selectedChapter;
+    const searchMatch = !searchTerm || 
+                        (card.front && card.front.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                        (card.title && card.title.toLowerCase().includes(searchTerm.toLowerCase()));
+    return chapterMatch && searchMatch;
+  });
 
   const toggleFlip = (cardId) => {
     setFlippedCards(prev => ({
@@ -150,7 +155,7 @@ const CardBrowser = () => {
               <span className="text-xl sm:text-2xl">ℹ️</span>
             </div>
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2 sm:mb-4 line-clamp-2">
-              Tổng Ôn <span className="text-blue-600">{deck.title.split(' ').slice(2).join(' ')}</span>
+              {deck.title}
             </h1>
             <p className="text-gray-600 text-xs sm:text-base max-w-2xl mx-auto px-2">
               {deck.description}
@@ -159,19 +164,30 @@ const CardBrowser = () => {
 
           {/* Controls Row */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-stretch sm:items-center mb-4 sm:mb-6">
-            {/* Sort Dropdown */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm order-2 sm:order-1"
-            >
-              <option value="chapter">📚 Sắp xếp theo Chương</option>
-              <option value="title">📝 Sắp xếp theo Tiêu đề</option>
-              <option value="created">🕐 Mới nhất trước</option>
-            </select>
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center order-2 sm:order-1 flex-1">
+                {/* Sort Dropdown */}
+                <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+                >
+                <option value="chapter">📚 Sắp xếp theo Chương</option>
+                <option value="title">📝 Sắp xếp theo Tiêu đề</option>
+                <option value="created">🕐 Mới nhất trước</option>
+                </select>
+
+                {/* Search Bar */}
+                <input
+                type="text"
+                placeholder="🔍 Tìm kiếm tựa đề/câu hỏi..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:max-w-xs text-sm"
+                />
+            </div>
 
             {/* Card Count */}
-            <div className="text-xs sm:text-sm text-gray-600 font-medium text-center sm:text-right order-1 sm:order-2">
+            <div className="text-xs sm:text-sm text-gray-600 font-medium text-center sm:text-right order-1 sm:order-2 shrink-0">
               Hiển thị {filteredCards.length} / {cards.length} cards
             </div>
           </div>
