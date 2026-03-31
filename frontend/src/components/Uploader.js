@@ -72,7 +72,7 @@ const Uploader = ({ onUploadSuccess }) => {
       onUploadSuccess();
       
       setTimeout(() => {
-        navigate(`/study/${response.data.id}`);
+        navigate(`/deck/${response.data.id}/cards`);
       }, 1500);
     } catch (err) {
       setFileError(`Lỗi upload: ${err.response?.data?.detail || err.message}`);
@@ -111,7 +111,7 @@ const Uploader = ({ onUploadSuccess }) => {
       }
 
       setTimeout(() => {
-        navigate(`/study/${response.data.id}`);
+        navigate(`/deck/${response.data.id}/cards`);
       }, 1500);
     } catch (err) {
       setPasteError(`Lỗi: ${err.response?.data?.detail || err.message}`);

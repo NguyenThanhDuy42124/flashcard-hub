@@ -52,7 +52,7 @@ const DeckBuilder = () => {
       };
 
       const response = await decksAPI.createDeck(deckData);
-      navigate(`/study/${response.data.id}`);
+      navigate(`/deck/${response.data.id}/cards`);
     } catch (err) {
       setError(`Không thể tạo deck: ${err.response?.data?.detail || err.message}`);
     } finally {

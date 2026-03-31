@@ -39,9 +39,9 @@ const HtmlPasteUploader = ({ onUploadSuccess }) => {
         onUploadSuccess();
       }
 
-      // Redirect to study after 2 seconds
+      // Redirect to deck detail after 2 seconds
       setTimeout(() => {
-        navigate(`/study/${response.data.id}`);
+        navigate(`/deck/${response.data.id}/cards`);
       }, 2000);
     } catch (err) {
       setError(`Lỗi: ${err.response?.data?.detail || err.message}`);
