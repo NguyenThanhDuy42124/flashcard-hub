@@ -31,12 +31,12 @@ def extract_json_from_html(html_content: str) -> str:
     if not script_content:
         raise ValueError("Script tag is empty")
 
-    # Try to find array assignment (const/let/var cardsData = [...])
-    pattern = r'=\s*(\[[\s\S]*\])\s*;?'
+    # Try to find array assignment (const/let/var flashcardsData = [{...}])
+    pattern = r'(?:const|let|var)\s+\w+\s*=\s*(\s*\[\s*\{[\s\S]*?\}\s*\])\s*;'
     match = re.search(pattern, script_content)
 
     if not match:
-        raise ValueError("Could not find array structure in script")
+        raise ValueError("Could not find an array of objects structure in script")
 
     json_str = match.group(1)
     
