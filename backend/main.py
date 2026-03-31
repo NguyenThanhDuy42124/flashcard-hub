@@ -22,7 +22,7 @@ except ImportError:
     logging_handler = logging.StreamHandler()
     has_rich = False
 
-from database import get_db, engine, Base
+from database import get_db, engine, Base, SessionLocal
 from models import User, Deck, Card, CardReview, StudySession
 from schemas import (
     CardCreate, CardResponse, DeckCreate, DeckUpdate, DeckResponse,
@@ -82,8 +82,66 @@ try:
             logger.info("🔧 Attempting column verification as fallback")
             ensure_card_columns_exist()
     
+    def seed_sample_data():
+        """Create sample data if database is empty."""
+        try:
+            db = SessionLocal()
+            deck_count = db.query(Deck).count()
+            
+            if deck_count == 0:
+                logger.info("📚 Database is empty, creating sample data...")
+                
+                # Create test user
+                user = User(
+                    username="demo_user",
+                    email="demo@flashcard.local",
+                    password_hash="demo_hash"
+                )
+                db.add(user)
+                db.flush()
+                
+                # Create sample deck
+                deck = Deck(
+                    title="Tổng Ôn Mạng Máy Tính",
+                    description="Ôn tập kiến thức cơ bản về mạng máy tính",
+                    owner_id=user.id,
+                    is_public=True,
+                    tag="networking"
+                )
+                db.add(deck)
+                db.flush()
+                
+                # Create sample cards
+                sample_cards = [
+                    ("TCP/IP là gì?", "TCP/IP là một bộ giao thức mạng"), 
+                    ("OSI Model có mấy layer?", "OSI Model có 7 layer"),
+                    ("Port 80 dùng cho gì?", "Port 80 dùng cho HTTP"),
+                    ("DNS là gì?", "DNS dùng để chuyển đổi tên miền thành IP"),
+                    ("DHCP là gì?", "DHCP dùng để cấp phát địa chỉ IP tự động"),
+                ]
+                
+                for front, back in sample_cards:
+                    card = Card(
+                        deck_id=deck.id,
+                        front=front,
+                        back=back,
+                        title=front[:50],
+                        chapter="Chapter 1"
+                    )
+                    db.add(card)
+                
+                db.commit()
+                logger.info(f"✅ Sample data created: 1 user, 1 deck, {len(sample_cards)} cards")
+            else:
+                logger.info(f"✅ Database has {deck_count} decks, skipping sample data")
+            
+            db.close()
+        except Exception as e:
+            logger.error(f"❌ Error seeding sample data: {e}")
+    
     # Run migrations on startup
     run_migrations()
+    seed_sample_data()
 except ImportError:
     logger.warning("⚠️ Alembic not available, skipping migrations")
     # Fallback: create all tables (only for development)
