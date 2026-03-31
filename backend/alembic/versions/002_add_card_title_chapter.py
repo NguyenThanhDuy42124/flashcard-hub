@@ -32,5 +32,6 @@ def downgrade():
     op.drop_index(op.f('ix_cards_title'), table_name='cards')
     
     # Drop columns
+    op.drop_column('cards', 'title')
     op.drop_column('cards', 'chapter')
     op.drop_column('cards', 'title')
