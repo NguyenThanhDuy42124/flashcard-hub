@@ -46,6 +46,8 @@ class Card(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     deck_id = Column(Integer, ForeignKey("decks.id"), nullable=False)
+    title = Column(String(255), nullable=True, index=True)  # Card question/title
+    chapter = Column(String(100), nullable=True, index=True)  # Chapter/section for grouping
     front = Column(Text, nullable=False)
     back = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

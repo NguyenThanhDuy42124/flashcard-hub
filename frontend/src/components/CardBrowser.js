@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decksAPI } from '../api';
+import CreateCardModal from './CreateCardModal';
 
 const CardBrowser = () => {
   const { deckId } = useParams();
@@ -12,6 +13,8 @@ const CardBrowser = () => {
   const [selectedChapter, setSelectedChapter] = useState('Tất cả');
   const [chapters, setChapters] = useState([]);
   const [flippedCards, setFlippedCards] = useState({});
+  const [sortBy, setSortBy] = useState('chapter');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchDeckAndCards = async () => {
@@ -22,16 +25,17 @@ const CardBrowser = () => {
         const deckResponse = await decksAPI.getDeck(deckId);
         setDeck(deckResponse.data);
         
-        // Fetch cards
-        const cardsResponse = await decksAPI.getDeckCards(deckId);
+        // Fetch cards with sorting
+        const chapterFilter = selectedChapter === 'Tất cả' ? null : selectedChapter;
+        const cardsResponse = await decksAPI.getDeckCards(deckId, sortBy, chapterFilter);
         const allCards = cardsResponse.data;
         setCards(allCards);
         
-        // Extract unique chapters
+        // Extract unique chapters from all cards
         const uniqueChapters = ['Tất cả', ...new Set(
           allCards
-            .map(card => card.category || 'General')
-            .filter(cat => cat)
+            .map(card => card.chapter || 'General')
+            .filter(ch => ch)
         )];
         setChapters(uniqueChapters);
         
@@ -45,17 +49,27 @@ const CardBrowser = () => {
     };
 
     fetchDeckAndCards();
-  }, [deckId]);
+  }, [deckId, sortBy, selectedChapter]);
 
   const filteredCards = selectedChapter === 'Tất cả' 
     ? cards 
-    : cards.filter(card => (card.category || 'General') === selectedChapter);
+    : cards.filter(card => (card.chapter || 'General') === selectedChapter);
 
   const toggleFlip = (cardId) => {
     setFlippedCards(prev => ({
       ...prev,
       [cardId]: !prev[cardId]
     }));
+  };
+
+  const handleCardCreated = (newCard) => {
+    // Add new card to list and update chapters
+    setCards(prev => [...prev, newCard]);
+    
+    // Update chapters if new chapter added
+    if (newCard.chapter && !chapters.includes(newCard.chapter)) {
+      setChapters(prev => [...prev, newCard.chapter]);
+    }
   };
 
   if (loading) {
@@ -113,6 +127,12 @@ const CardBrowser = () => {
             >
               ← Quay lại
             </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition"
+            >
+              + Thêm Card
+            </button>
           </div>
 
           {/* Title Section */}
@@ -126,6 +146,25 @@ const CardBrowser = () => {
             <p className="text-gray-600 text-base max-w-2xl mx-auto">
               {deck.description}
             </p>
+          </div>
+
+          {/* Controls Row */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
+            {/* Sort Dropdown */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="chapter">📚 Sắp xếp theo Chương</option>
+              <option value="title">📝 Sắp xếp theo Tiêu đề</option>
+              <option value="created">🕐 Mới nhất trước</option>
+            </select>
+
+            {/* Card Count */}
+            <div className="text-sm text-gray-600 font-medium">
+              Hiển thị {filteredCards.length} / {cards.length} cards
+            </div>
           </div>
 
           {/* Chapter Filter Tabs */}
@@ -153,7 +192,13 @@ const CardBrowser = () => {
       {filteredCards.length === 0 ? (
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-            <p className="text-yellow-800 text-lg">Không có cards trong chương này</p>
+            <p className="text-yellow-800 text-lg mb-4">Không có cards trong chương này</p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              + Thêm card mới
+            </button>
           </div>
         </div>
       ) : (
@@ -166,7 +211,7 @@ const CardBrowser = () => {
                 <div
                   key={card.id}
                   onClick={() => toggleFlip(card.id)}
-                  className="h-64 cursor-pointer perspective"
+                  className="h-72 cursor-pointer perspective"
                 >
                   <div
                     className={`relative w-full h-full transition-transform duration-500 transform-gpu ${
@@ -184,7 +229,22 @@ const CardBrowser = () => {
                         backfaceVisibility: 'hidden',
                       }}
                     >
+                      {/* Chapter Badge */}
+                      {card.chapter && (
+                        <div className="absolute top-3 left-3 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
+                          {card.chapter}
+                        </div>
+                      )}
+
                       <div className="text-xs text-gray-500 font-semibold mb-3">❓ CÂU HỎI</div>
+                      
+                      {/* Card Title */}
+                      {card.title && (
+                        <p className="text-sm text-gray-600 font-semibold mb-2 max-h-12 overflow-hidden">
+                          {card.title}
+                        </p>
+                      )}
+                      
                       <p className="text-lg font-bold text-gray-900 leading-relaxed flex-1 flex items-center">
                         {card.front}
                       </p>
@@ -200,7 +260,7 @@ const CardBrowser = () => {
                       }}
                     >
                       <div className="text-xs text-blue-200 font-semibold mb-3">💡 ĐÁP ÁN</div>
-                      <div className="flex-1 overflow-y-auto text-sm leading-relaxed">
+                      <div className="flex-1 overflow-y-auto text-sm leading-relaxed custom-scrollbar">
                         {typeof card.back === 'string' && card.back.includes('\n') ? (
                           <ul className="space-y-2">
                             {card.back.split('\n').map((line, idx) => (
@@ -237,6 +297,15 @@ const CardBrowser = () => {
           </div>
         </div>
       )}
+
+      {/* Create Card Modal */}
+      <CreateCardModal
+        deckId={deckId}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCardCreated={handleCardCreated}
+        chapters={chapters.filter(ch => ch !== 'Tất cả')}
+      />
     </div>
   );
 };

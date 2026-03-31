@@ -8,6 +8,8 @@ class CardBase(BaseModel):
     """Base card model."""
     front: str
     back: str
+    title: Optional[str] = None  # Card question/title
+    chapter: Optional[str] = None  # Chapter/section
 
 
 class CardCreate(CardBase):

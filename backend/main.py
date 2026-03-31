@@ -204,14 +204,37 @@ async def get_deck(deck_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/decks/{deck_id}/cards", response_model=List[CardResponse])
-async def get_deck_cards(deck_id: int, db: Session = Depends(get_db)):
-    """Get all cards for a specific deck."""
+async def get_deck_cards(
+    deck_id: int,
+    sort_by: str = Query("chapter", description="Sort by: chapter, title, created"),
+    chapter: str = Query(None, description="Filter by chapter"),
+    search: str = Query(None, description="Search by title"),
+    db: Session = Depends(get_db)
+):
+    """Get all cards for a specific deck with optional sorting and filtering."""
     deck = db.query(Deck).filter(Deck.id == deck_id).first()
 
     if not deck:
         raise HTTPException(status_code=404, detail="Deck not found")
 
-    cards = db.query(Card).filter(Card.deck_id == deck_id).all()
+    query = db.query(Card).filter(Card.deck_id == deck_id)
+    
+    # Filter by chapter if provided
+    if chapter and chapter != "Tất cả":
+        query = query.filter(Card.chapter == chapter)
+    
+    # Search by title if provided
+    if search:
+        query = query.filter(Card.title.ilike(f"%{search}%"))
+    
+    # Sort results
+    if sort_by == "title":
+        cards = query.order_by(Card.title).all()
+    elif sort_by == "created":
+        cards = query.order_by(Card.created_at.desc()).all()
+    else:  # default to chapter
+        cards = query.order_by(Card.chapter, Card.created_at).all()
+    
     return cards
 
 
@@ -277,7 +300,7 @@ async def create_card(
     card_data: CardCreate,
     db: Session = Depends(get_db)
 ):
-    """Create a new card in a deck."""
+    """Create a new card in a deck with title and chapter."""
     deck = db.query(Deck).filter(Deck.id == deck_id).first()
 
     if not deck:
@@ -285,6 +308,8 @@ async def create_card(
 
     new_card = Card(
         deck_id=deck_id,
+        title=card_data.title,
+        chapter=card_data.chapter,
         front=card_data.front,
         back=card_data.back
     )

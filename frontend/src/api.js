@@ -32,9 +32,19 @@ export const decksAPI = {
   getDeck: (deckId) =>
     API.get(`/decks/${deckId}`),
 
-  // Get deck cards
-  getDeckCards: (deckId) =>
-    API.get(`/decks/${deckId}/cards`),
+  // Get deck cards with sorting and filtering
+  getDeckCards: (deckId, sortBy = 'chapter', chapter = null, search = null) =>
+    API.get(`/decks/${deckId}/cards`, { 
+      params: { 
+        sort_by: sortBy,
+        chapter: chapter,
+        search: search
+      } 
+    }),
+
+  // Create new card in deck
+  createCard: (deckId, cardData) =>
+    API.post(`/cards?deck_id=${deckId}`, cardData),
 
   // Create new deck
   createDeck: (deckData) =>
