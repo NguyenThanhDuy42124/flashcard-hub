@@ -9,8 +9,18 @@ from pathlib import Path
 import os
 import sys
 import logging
-from rich.logging import RichHandler
-from rich.console import Console
+
+# Try to setup Rich logging, fallback to standard logging if not available
+try:
+    from rich.logging import RichHandler
+    from rich.console import Console
+    console = Console()
+    logging_handler = RichHandler(console=console, rich_tracebacks=True)
+    has_rich = True
+except ImportError:
+    console = None
+    logging_handler = logging.StreamHandler()
+    has_rich = False
 
 from database import get_db, engine, Base
 from models import User, Deck, Card, CardReview, StudySession
@@ -22,12 +32,11 @@ from schemas import (
 from parser import parse_html_file
 from srs_engine import sm2_engine
 
-# Setup Rich logging with colors
-console = Console()
+# Setup logging with or without Rich colors
 logging.basicConfig(
     level=logging.INFO,
-    format="%(message)s",
-    handlers=[RichHandler(console=console, rich_tracebacks=True)]
+    format="%(message)s" if has_rich else "%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging_handler]
 )
 logger = logging.getLogger("flashcard_hub")
 
