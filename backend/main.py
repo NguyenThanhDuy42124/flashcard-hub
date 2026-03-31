@@ -44,16 +44,43 @@ logger = logging.getLogger("flashcard_hub")
 try:
     from alembic.config import Config
     from alembic.command import upgrade as alembic_upgrade
+    from sqlalchemy import text, inspect
+    
+    def ensure_card_columns_exist():
+        """Ensure cards table has title and chapter columns."""
+        try:
+            inspector = inspect(engine)
+            card_columns = [col['name'] for col in inspector.get_columns('cards')]
+            
+            if 'title' not in card_columns:
+                logger.warning("⚠️ Adding missing 'title' column to cards table")
+                with engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE cards ADD COLUMN title VARCHAR(255)"))
+                    conn.commit()
+            
+            if 'chapter' not in card_columns:
+                logger.warning("⚠️ Adding missing 'chapter' column to cards table")
+                with engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE cards ADD COLUMN chapter VARCHAR(100)"))
+                    conn.commit()
+            
+            logger.info("✅ Card columns verified")
+        except Exception as e:
+            logger.error(f"❌ Error checking card columns: {e}")
     
     def run_migrations():
         """Run Alembic migrations automatically on startup."""
         try:
+            db_url = os.getenv("DATABASE_URL", f"sqlite:///{Path(__file__).parent.parent / 'flashcard_hub.db'}")
             alembic_config = Config(str(Path(__file__).parent / "alembic.ini"))
-            alembic_config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL", f"sqlite:///{Path(__file__).parent.parent / 'flashcard_hub.db'}"))
+            alembic_config.set_main_option("sqlalchemy.url", db_url)
             alembic_upgrade(alembic_config, "head")
             logger.info("✅ Database migrations completed")
+            ensure_card_columns_exist()
         except Exception as e:
-            logger.warning(f"⚠️ Migration warning: {e}")
+            logger.error(f"❌ Migration error: {e}")
+            logger.info("🔧 Attempting column verification as fallback")
+            ensure_card_columns_exist()
     
     # Run migrations on startup
     run_migrations()
@@ -138,13 +165,9 @@ async def list_decks(
         decks = query.offset(skip).limit(limit).all()
         logger.info(f"✅ Found {len(decks)} public decks")
         
-        # Log deck details
-        for deck in decks:
-            logger.debug(f"  - Deck: {deck.title} (ID: {deck.id}, Cards: {len(deck.cards)})")
-        
         return decks
     except Exception as e:
-        print(f"Error loading decks: {e}")
+        logger.error(f"❌ Error loading decks: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error loading decks: {str(e)}")
