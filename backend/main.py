@@ -27,7 +27,8 @@ from models import User, Deck, Card, CardReview, StudySession
 from schemas import (
     CardCreate, CardResponse, DeckCreate, DeckUpdate, DeckResponse,
     UserCreate, UserResponse, CardReviewRequest, StudySessionCreate,
-    StudySessionResponse, UserProgressResponse, CreateDeckFromHTMLRequest
+    StudySessionResponse, UserProgressResponse, CreateDeckFromHTMLRequest,
+    AppendHTMLRequest
 )
 from parser import parse_html_file
 from srs_engine import sm2_engine
