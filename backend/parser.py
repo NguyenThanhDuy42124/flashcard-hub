@@ -32,7 +32,8 @@ def extract_json_from_html(html_content: str) -> str:
         raise ValueError("Script tag is empty")
 
     # Try to find array assignment (const/let/var flashcardsData = [{...}])
-    pattern = r'(?:const|let|var)\s+\w+\s*=\s*(\s*\[\s*\{[\s\S]*?\}\s*\])\s*;'
+    # Handles potential JS comments inside the array structure before the first object
+    pattern = r'(?:const|let|var)\s+\w+\s*=\s*(\s*\[\s*(?:/\*[\s\S]*?\*/|//[^\n]*\n|\s)*\{[\s\S]*?\}\s*\])\s*;'
     match = re.search(pattern, script_content)
 
     if not match:
