@@ -517,31 +517,8 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 
-# Catch-all route for React Router - serve index.html for any unmatched routes
-# This MUST come before StaticFiles mount!
-@app.get("/{path_name:path}")
-async def catch_all(path_name: str):
-    """Catch-all route for React Router SPA - serve index.html."""
-    # If path starts with api/, don't catch it (API routes handled above)
-    if path_name.startswith("api/"):
-        raise HTTPException(status_code=404, detail="API endpoint not found")
-    
-    # Don't catch static files
-    if path_name.startswith("static/"):
-        raise HTTPException(status_code=404, detail="Static file not found")
-    
-    # Serve index.html for all other routes (React Router will handle them)
-    frontend_build = Path(__file__).parent.parent / "frontend" / "build"
-    index_path = frontend_build / "index.html"
-    
-    if index_path.exists():
-        with open(index_path) as f:
-            return HTMLResponse(content=f.read())
-    
-    raise HTTPException(status_code=404, detail="index.html not found")
-
-
 # Mount frontend React build - serve static files (at END to not block /api routes!)
+# StaticFiles with html=True will serve index.html for any non-existent routes (SPA fallback)
 # Use absolute path since app.py chdir to backend
 
 # Get the project root (parent of backend directory)
