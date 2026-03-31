@@ -246,14 +246,12 @@ const CardBrowser = () => {
               >
                 + Thêm 1 Card
               </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setIsBulkAddOpen(true)}
-                  className="px-3 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition text-sm whitespace-nowrap"
-                >
-                  + Thêm hàng loạt
-                </button>
-              )}
+              <button
+                onClick={() => setIsBulkAddOpen(true)}
+                className="px-3 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition text-sm whitespace-nowrap"
+              >
+                + Thêm hàng loạt
+              </button>
             </div>
           </div>
 

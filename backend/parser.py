@@ -2,7 +2,7 @@
 import re
 import json
 import json5  # Để parse JavaScript objects
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Union
 from bs4 import BeautifulSoup
 from pydantic import ValidationError
 
@@ -36,25 +36,43 @@ def extract_json_from_html(html_content: str) -> str:
     raise ValueError("Could not find an array of objects structure in any <script> tag")
 
 
-def parse_cards_json(json_str: str) -> Dict[str, Any]:
-    """
-    Parse and validate cards JSON string.
-
-    Args:
-        json_str: JSON string containing cards array
-
-    Returns:
-        List of validated card dictionaries
-    """
+def try_parse_raw_json(payload: str) -> Optional[Union[List[Any], Dict[str, Any]]]:
+    """Parse raw content that may already be JSON/JSON5 instead of HTML."""
     try:
-        # Thử json5 trước - nó parse JavaScript objects hoàn hảo
-        cards_data = json5.loads(json_str)
-    except Exception as e:
-        # Fallback to standard json
+        data = json5.loads(payload)
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            if 'cards' in data and isinstance(data['cards'], list):
+                return data['cards']
+            # Also accept a single-object wrapper to keep behavior lenient
+            if all(k in data for k in ('question', 'options')) or all(k in data for k in ('front', 'back')):
+                return [data]
+    except Exception:
+        return None
+    return None
+
+
+def parse_cards_json(json_input: Union[str, List[Any], Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Parse and validate cards JSON payload.
+
+    Accepts either a JSON string or already-parsed list/dict.
+    """
+    if isinstance(json_input, (list, dict)):
+        cards_data = json_input
+    else:
         try:
-            cards_data = json.loads(json_str)
-        except json.JSONDecodeError as e2:
-            raise ValueError(f"Invalid JSON in cardsData: {str(e2)}")
+            cards_data = json5.loads(json_input)
+        except Exception:
+            try:
+                cards_data = json.loads(json_input)
+            except json.JSONDecodeError as e2:
+                raise ValueError(f"Invalid JSON in cardsData: {str(e2)}")
+
+    # Unwrap if provided as object with cards
+    if isinstance(cards_data, dict) and 'cards' in cards_data and isinstance(cards_data['cards'], list):
+        cards_data = cards_data['cards']
 
     if not isinstance(cards_data, list):
         raise ValueError("cardsData must be an array")
@@ -67,19 +85,53 @@ def parse_cards_json(json_str: str) -> Dict[str, Any]:
         if not isinstance(card, dict):
             raise ValueError(f"Card at index {idx} is not an object")
 
-        # QUIZ format: question + options + correctAnswer + explanation (optional chapter/title)
+        # QUIZ format: question + options + correct/correctAnswer + explanation (optional chapter/title)
         if 'question' in card and 'options' in card:
             detected_type = "quiz"
             question_text = str(card.get('question', '')).strip()
-            options_obj = card.get('options', {}) or {}
-            # Build options as multiline string for front
-            correct = str(card.get('correctAnswer', '')).strip()
+            options_raw = card.get('options', {}) or {}
+
+            # Normalize options: accept array or object, convert array -> {A: text}
+            options_obj: Dict[str, str] = {}
+            if isinstance(options_raw, list):
+                for opt_idx, opt_val in enumerate(options_raw):
+                    key = chr(ord('A') + opt_idx)
+                    options_obj[key] = str(opt_val).strip()
+            elif isinstance(options_raw, dict):
+                options_obj = {str(k): str(v).strip() for k, v in options_raw.items()}
+            else:
+                raise ValueError(f"Card at index {idx} has unsupported options format")
+
+            # Normalize correct answer: accept index (0-based or 1-based), digit-string, or letter
+            correct_raw = card.get('correctAnswer', card.get('correct'))
+            correct_key = None
+            if isinstance(correct_raw, (int, float)):
+                idx_num = int(correct_raw)
+                # Try 0-based first
+                if 0 <= idx_num < len(options_obj):
+                    correct_key = chr(ord('A') + idx_num)
+                # Fallback 1-based if needed
+                elif 1 <= idx_num <= len(options_obj):
+                    correct_key = chr(ord('A') + idx_num - 1)
+            elif isinstance(correct_raw, str):
+                corrected = correct_raw.strip()
+                if corrected.isdigit():
+                    idx_num = int(corrected)
+                    if 0 <= idx_num < len(options_obj):
+                        correct_key = chr(ord('A') + idx_num)
+                    elif 1 <= idx_num <= len(options_obj):
+                        correct_key = chr(ord('A') + idx_num - 1)
+                elif len(corrected) == 1:
+                    correct_key = corrected.upper()
+                else:
+                    correct_key = corrected
+
             explanation = str(card.get('explanation', '')).strip()
             # Store quiz metadata in back as JSON for frontend to render MCQ
             meta_payload = {
                 "type": "quiz",
                 "options": options_obj,
-                "correct": correct,
+                "correct": correct_key,
                 "explanation": explanation,
             }
             back_text = "__QUIZ__::" + json.dumps(meta_payload, ensure_ascii=False)
@@ -131,11 +183,15 @@ def parse_html_file(html_content: str) -> Dict[str, Any]:
     Returns:
         Dictionary with parsed deck data
     """
-    # Extract JSON string
-    json_str = extract_json_from_html(html_content)
+    # 1) Try direct JSON (paste raw array/object)
+    direct_payload = try_parse_raw_json(html_content)
 
-    # Parse and validate cards
-    parsed = parse_cards_json(json_str)
+    if direct_payload is not None:
+        parsed = parse_cards_json(direct_payload)
+    else:
+        # 2) Extract JSON from HTML <script>
+        json_str = extract_json_from_html(html_content)
+        parsed = parse_cards_json(json_str)
     cards = parsed["cards"]
     detected_type = parsed.get("detected_type", "flashcard")
 
