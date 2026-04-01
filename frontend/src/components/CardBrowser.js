@@ -42,6 +42,18 @@ const CardBrowser = () => {
   const [editPosition, setEditPosition] = useState('');
   const [togglingAdd, setTogglingAdd] = useState(false);
   const [exportingFormat, setExportingFormat] = useState(null);
+
+  // Giữ selection đồng bộ khi danh sách thẻ thay đổi
+  useEffect(() => {
+    setSelectedCards((prev) => {
+      const cardIds = new Set(cards.map((c) => c.id));
+      const next = new Set();
+      prev.forEach((id) => {
+        if (cardIds.has(id)) next.add(id);
+      });
+      return next;
+    });
+  }, [cards]);
   const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
   const addingLocked = deck && deck.allow_card_additions === false && !isAdmin;
 
@@ -89,6 +101,9 @@ const CardBrowser = () => {
       (card.title && card.title.toLowerCase().includes(searchTerm.toLowerCase()));
     return chapterMatch && searchMatch;
   });
+
+  const filteredIds = filteredCards.map(c => c.id);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every(id => selectedCards.has(id));
 
   const parseQuizMeta = (card) => {
     if (!card.back || typeof card.back !== 'string') return null;
@@ -160,7 +175,7 @@ const CardBrowser = () => {
 
   const handleBulkDelete = async () => {
     if (selectedCards.size === 0) return;
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa ${selectedCards.size} thẻ đã chọn?`)) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa ${selectedCards.size} thẻ đã chọn (theo bộ lọc hiện tại)?`)) return;
     try {
       for (const cardId of selectedCards) {
         await cardsAPI.deleteCard(cardId);
@@ -175,6 +190,25 @@ const CardBrowser = () => {
     } catch (err) {
       alert('Lỗi khi xóa nhiều thẻ');
     }
+  };
+
+  const handleSelectFiltered = (mode) => {
+    setSelectedCards(prev => {
+      const next = new Set(prev);
+      if (mode === 'clear') {
+        filteredIds.forEach(id => next.delete(id));
+        return next;
+      }
+      if (mode === 'toggle-all') {
+        if (allFilteredSelected) {
+          filteredIds.forEach(id => next.delete(id));
+        } else {
+          filteredIds.forEach(id => next.add(id));
+        }
+        return next;
+      }
+      return next;
+    });
   };
 
   const handleUpdateTitle = async () => {
@@ -594,6 +628,25 @@ const CardBrowser = () => {
               Hiển thị {filteredCards.length} / {cards.length} cards
             </div>
           </div>
+
+          {isAdmin && (
+            <div className="flex flex-wrap gap-2 mb-4 sm:mb-6 items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+              <span className="text-xs sm:text-sm text-gray-600 font-semibold">Chọn nhanh:</span>
+              <button
+                onClick={() => handleSelectFiltered('toggle-all')}
+                className={`px-3 py-1 rounded-lg text-sm font-medium border ${allFilteredSelected ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'}`}
+              >
+                {allFilteredSelected ? 'Bỏ chọn tất cả (đang lọc)' : 'Chọn tất cả (đang lọc)'}
+              </button>
+              <button
+                onClick={() => handleSelectFiltered('clear')}
+                className="px-3 py-1 rounded-lg text-sm font-medium border bg-white text-gray-700 hover:bg-gray-100 border-gray-200"
+              >
+                Bỏ chọn trong bộ lọc
+              </button>
+              <span className="text-xs sm:text-sm text-gray-600">Đang chọn: {selectedCards.size}</span>
+            </div>
+          )}
 
           {chapters.length > 1 && (
             <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
