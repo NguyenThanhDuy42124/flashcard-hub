@@ -895,11 +895,15 @@ async def create_exam_deck(
     if exam_data.time_limit and exam_data.time_limit != "unlimited":
         description = f"{description} | Thời gian: {exam_data.time_limit}"
 
+    target_tag = (exam_data.tag or "Quiz").strip() if isinstance(exam_data.tag, str) else "Quiz"
+    if target_tag not in ["Quiz", "Flashcard"]:
+        raise HTTPException(status_code=400, detail="tag phải là 'Quiz' hoặc 'Flashcard'")
+
     exam_deck = Deck(
         title=exam_data.title,
         description=description,
         owner_id=user_id,
-        tag="exam",
+        tag=target_tag,
         is_public=True,
         allow_card_additions=False
     )
@@ -925,6 +929,7 @@ async def create_exam_deck(
         deck_title=exam_deck.title,
         total_questions=len(selected_cards),
         expires_at=expires_at,
+        tag=target_tag,
     )
 
 

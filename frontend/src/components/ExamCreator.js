@@ -23,13 +23,14 @@ const ExamCreator = () => {
   const [timeLimit, setTimeLimit] = useState('1h');
   const [title, setTitle] = useState('Đề tổng hợp');
   const [description, setDescription] = useState('Đề trộn tự động từ nhiều deck');
+  const [deckType, setDeckType] = useState('Quiz');
   const navigate = useNavigate();
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await decksAPI.listDecks(0, 100, null);
+        const res = await decksAPI.listDecks(0, 100, deckType);
         setDecks(res.data);
       } catch (err) {
         setError(err.response?.data?.detail || 'Không tải được danh sách deck');
@@ -38,7 +39,13 @@ const ExamCreator = () => {
       }
     };
     load();
-  }, []);
+  }, [deckType]);
+
+  useEffect(() => {
+    // Khi chuyển loại đề, reset lựa chọn để tránh trộn Quiz/Flashcard
+    setSelectedDecks([]);
+    setSearch('');
+  }, [deckType]);
 
   const availableDecks = useMemo(() => {
     const selectedIds = selectedDecks.map((d) => d.id);
@@ -92,6 +99,7 @@ const ExamCreator = () => {
       total_questions: Number(totalQuestions),
       random_scope: randomScope,
       time_limit: timeLimit,
+      tag: deckType,
     };
 
     try {
@@ -112,6 +120,24 @@ const ExamCreator = () => {
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">📝 Tạo đề thi</h1>
         <p className="text-gray-600">Chọn deck, đặt % và tạo đề một lần.</p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 bg-white rounded-xl shadow px-4 py-3">
+        <span className="text-sm font-semibold text-gray-700">Loại đề:</span>
+        {['Quiz', 'Flashcard'].map((type) => (
+          <button
+            key={type}
+            onClick={() => setDeckType(type)}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${
+              deckType === type
+                ? 'bg-blue-600 text-white border-blue-700 shadow'
+                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:text-blue-700'
+            }`}
+          >
+            {type}
+          </button>
+        ))}
+        <span className="text-xs text-gray-500">Chỉ hiển thị deck đúng loại.</span>
       </div>
 
       {error && (

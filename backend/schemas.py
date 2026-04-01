@@ -143,6 +143,7 @@ class ExamCreateRequest(BaseModel):
     total_questions: int
     random_scope: str = "deck"  # deck or chapter
     time_limit: Optional[str] = None  # 1h,2h,3h,1w,1m,unlimited
+    tag: Optional[str] = "Quiz"  # Quiz or Flashcard
 
 
 class ExamCreateResponse(BaseModel):
@@ -150,4 +151,4 @@ class ExamCreateResponse(BaseModel):
     deck_title: str
     total_questions: int
     expires_at: Optional[datetime] = None
-    tag: str = "exam"
+    tag: str = "Quiz"
