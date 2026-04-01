@@ -978,6 +978,8 @@ async def update_card(
 
     card.front = card_data.front
     card.back = card_data.back
+    card.title = card_data.title
+    card.chapter = card_data.chapter
     if card_data.position:
         move_card_to_position(db, card, int(card_data.position))
     card.updated_at = datetime.utcnow()
