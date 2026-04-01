@@ -41,6 +41,7 @@ const CardBrowser = () => {
   const [editExplanation, setEditExplanation] = useState('');
   const [editPosition, setEditPosition] = useState('');
   const [togglingAdd, setTogglingAdd] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState(null);
   const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
   const addingLocked = deck && deck.allow_card_additions === false && !isAdmin;
 
@@ -351,6 +352,30 @@ const CardBrowser = () => {
     }
   };
 
+  const handleExportDeck = async (format) => {
+    try {
+      setExportingFormat(format);
+      const response = await decksAPI.exportDeck(deckId, format);
+      const blobData = response.data instanceof Blob
+        ? response.data
+        : new Blob([response.data], { type: format === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/html' });
+
+      const url = window.URL.createObjectURL(blobData);
+      const link = document.createElement('a');
+      const safeTitle = (deck?.title || 'deck').replace(/[^a-z0-9-_]/gi, '_').toLowerCase();
+      link.href = url;
+      link.download = `${safeTitle}.${format === 'docx' ? 'docx' : 'html'}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Không thể xuất deck: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -421,6 +446,22 @@ const CardBrowser = () => {
                   className={`px-3 sm:px-6 py-2 rounded-lg font-medium transition text-sm whitespace-nowrap ${addingLocked ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
                 >
                   + Thêm hàng loạt
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-end w-full">
+                <button
+                  onClick={() => handleExportDeck('html')}
+                  disabled={!!exportingFormat}
+                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 ${exportingFormat ? 'opacity-60 cursor-wait' : ''}`}
+                >
+                  ⬇️ Xuất HTML
+                </button>
+                <button
+                  onClick={() => handleExportDeck('docx')}
+                  disabled={!!exportingFormat}
+                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 ${exportingFormat ? 'opacity-60 cursor-wait' : ''}`}
+                >
+                  ⬇️ Xuất DOCX
                 </button>
               </div>
               {isAdmin && (
@@ -765,6 +806,16 @@ const CardBrowser = () => {
                           </button>
                         ))}
                       </div>
+
+                      {isAnswered && quizMeta?.explanation && (
+                        <div className="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
+                          <div className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide text-amber-700">
+                            <span role="img" aria-label="info">💡</span>
+                            Giải thích
+                          </div>
+                          <p className="mt-2 leading-relaxed text-sm sm:text-base">{quizMeta.explanation}</p>
+                        </div>
+                      )}
 
                       {isAdmin && (
                         <div className="absolute top-3 right-3 flex flex-col items-end gap-2 text-xs">

@@ -32,6 +32,10 @@ export const decksAPI = {
   getDeck: (deckId) =>
     API.get(`/decks/${deckId}`),
 
+  // Export deck as HTML or DOCX
+  exportDeck: (deckId, format = 'html') =>
+    API.get(`/decks/${deckId}/export`, { params: { format }, responseType: 'blob' }),
+
   // Get deck cards with sorting and filtering
   getDeckCards: (deckId, sortBy = 'position', chapter = null, search = null) =>
     API.get(`/decks/${deckId}/cards`, { 

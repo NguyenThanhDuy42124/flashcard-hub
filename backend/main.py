@@ -1,5 +1,6 @@
 """FastAPI main application with all routes."""
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Query, Request, Form, Body
+from fastapi.responses import StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -10,6 +11,11 @@ from pathlib import Path
 import os
 import sys
 import logging
+import json
+import html
+from io import BytesIO
+
+from docx import Document
 
 # Try to setup Rich logging, fallback to standard logging if not available
 try:
@@ -211,6 +217,134 @@ def move_card_to_position(db: Session, card: Card, new_position: int):
 
     card.position = target_pos
     db.commit()
+
+
+def parse_quiz_meta(back_content: str):
+    """Extract quiz metadata from card back if it is quiz formatted."""
+    if not back_content or not isinstance(back_content, str):
+        return None
+    if not back_content.startswith("__QUIZ__::"):
+        return None
+    try:
+        payload = json.loads(back_content.replace("__QUIZ__::", "", 1))
+        if payload.get("type") == "quiz":
+            return payload
+    except Exception:
+        return None
+    return None
+
+
+def export_deck_to_html(deck: Deck, cards: List[Card]) -> str:
+    """Render deck and cards into a standalone HTML string for download."""
+    card_blocks = []
+    for idx, card in enumerate(cards, start=1):
+        quiz_meta = parse_quiz_meta(card.back)
+        safe_title = html.escape(card.title or card.front or f"Thẻ {idx}")
+        safe_front = html.escape(card.front or "")
+        safe_chapter = html.escape(card.chapter or "Chưa phân chương")
+        body_html = ""
+
+        if quiz_meta:
+            options = quiz_meta.get("options", {})
+            options_html = "".join([
+                f"<li><strong>{html.escape(str(k))}.</strong> {html.escape(str(v))}"
+                f" {'<span style=\"color:#16a34a;font-weight:700\">(Đúng)</span>' if k == quiz_meta.get('correct') else ''}</li>"
+                for k, v in options.items()
+            ])
+            explanation = html.escape(quiz_meta.get("explanation") or "")
+            body_html = (
+                f"<p><strong>Dạng:</strong> Trắc nghiệm</p>"
+                f"<ul>{options_html}</ul>"
+                f"<p><strong>Giải thích:</strong> {explanation or 'Chưa có'}</p>"
+            )
+        else:
+            back_lines = [line.strip() for line in (card.back or "").splitlines() if line.strip()]
+            if len(back_lines) > 1:
+                body_html = "<ul>" + "".join(
+                    [f"<li>{html.escape(line)}</li>" for line in back_lines]
+                ) + "</ul>"
+            else:
+                body_html = f"<p>{html.escape(card.back or '')}</p>"
+
+        card_blocks.append(
+            f"""
+            <section style=\"padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;box-shadow:0 8px 24px -12px rgba(0,0,0,0.15);\">
+                <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:#475569;font-size:14px;\">
+                    <span style=\"font-weight:700;\">#{idx}</span>
+                    <span style=\"padding:4px 10px;background:#eef2ff;color:#4338ca;border-radius:999px;font-weight:600;\">{safe_chapter}</span>
+                </div>
+                <h3 style=\"margin:6px 0;color:#0f172a;font-size:20px;font-weight:800;\">{safe_title}</h3>
+                <p style=\"margin:10px 0 12px;color:#1e293b;font-size:16px;line-height:1.6;\"><strong>Q:</strong> {safe_front}</p>
+                <div style=\"color:#0f172a;font-size:15px;line-height:1.6;\">{body_html}</div>
+            </section>
+            """
+        )
+
+    cards_html = "\n".join(card_blocks)
+    safe_deck_title = html.escape(deck.title or "Deck")
+    safe_description = html.escape(deck.description or "")
+
+    return f"""<!DOCTYPE html>
+<html lang=\"vi\">
+<head>
+    <meta charset=\"UTF-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
+    <title>{safe_deck_title} - Export</title>
+    <style>
+        body {{ font-family: 'Inter', sans-serif; background:#f8fafc; padding:24px; color:#0f172a; }}
+        .deck-header {{ margin-bottom:24px; }}
+        .deck-header h1 {{ font-size:28px; margin:0; }}
+        .deck-header p {{ color:#475569; margin-top:8px; }}
+        .grid {{ display:grid; gap:16px; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); }}
+    </style>
+</head>
+<body>
+    <div class=\"deck-header\">
+        <h1>📚 {safe_deck_title}</h1>
+        <p>{safe_description}</p>
+        <p style=\"color:#475569;\">Tổng số thẻ: {len(cards)}</p>
+    </div>
+    <div class=\"grid\">{cards_html}</div>
+</body>
+</html>"""
+
+
+def export_deck_to_docx(deck: Deck, cards: List[Card]) -> BytesIO:
+    """Render deck and cards into a DOCX file buffer."""
+    document = Document()
+    document.add_heading(deck.title or "Deck", 0)
+    if deck.description:
+        document.add_paragraph(deck.description)
+    document.add_paragraph(f"Tổng số thẻ: {len(cards)}")
+
+    for idx, card in enumerate(cards, start=1):
+        document.add_heading(f"Thẻ #{idx}: {card.title or card.front or 'Không tiêu đề'}", level=1)
+        document.add_paragraph(f"Chương: {card.chapter or 'Chưa phân chương'}")
+        document.add_paragraph("Mặt trước:")
+        document.add_paragraph(card.front or "")
+
+        quiz_meta = parse_quiz_meta(card.back)
+        if quiz_meta:
+            document.add_paragraph("Dạng: Trắc nghiệm")
+            options = quiz_meta.get("options", {})
+            correct_key = quiz_meta.get("correct")
+            for key, text in options.items():
+                label = "(Đúng)" if key == correct_key else "(Sai)"
+                document.add_paragraph(f"{key}. {text} {label}")
+            if quiz_meta.get("explanation"):
+                document.add_paragraph(f"Giải thích: {quiz_meta.get('explanation')}")
+        else:
+            document.add_paragraph("Mặt sau:")
+            if card.back:
+                for line in card.back.splitlines():
+                    document.add_paragraph(line)
+            else:
+                document.add_paragraph("")
+
+    buffer = BytesIO()
+    document.save(buffer)
+    buffer.seek(0)
+    return buffer
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -446,6 +580,36 @@ async def get_deck(deck_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"❌ Error fetching deck: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/decks/{deck_id}/export")
+async def export_deck(
+    deck_id: int,
+    format: str = Query("html", regex="^(html|docx)$", description="Định dạng xuất: html hoặc docx"),
+    db: Session = Depends(get_db)
+):
+    """Export a deck to HTML or DOCX for offline use or re-upload."""
+    deck = db.query(Deck).filter(Deck.id == deck_id).first()
+    if not deck:
+        raise HTTPException(status_code=404, detail=f"Deck {deck_id} not found")
+
+    cards = db.query(Card).filter(Card.deck_id == deck_id).order_by(Card.position.nulls_last(), Card.created_at).all()
+
+    filename_base = f"deck-{deck_id}"
+    if format == "html":
+        html_content = export_deck_to_html(deck, cards)
+        return Response(
+            content=html_content,
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f"attachment; filename={filename_base}.html"}
+        )
+
+    buffer = export_deck_to_docx(deck, cards)
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename={filename_base}.docx"}
+    )
 
 
 @app.get("/api/decks/{deck_id}/cards", response_model=List[CardResponse])
