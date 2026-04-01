@@ -31,6 +31,7 @@ const CardBrowser = () => {
   const [newTag, setNewTag] = useState('');
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [bulkHtml, setBulkHtml] = useState('');
+  const [bulkFileName, setBulkFileName] = useState('');
   const [quizAnswers, setQuizAnswers] = useState({});
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editCard, setEditCard] = useState(null);
@@ -182,12 +183,28 @@ const CardBrowser = () => {
       setChapters(uniqueChapters);
       setIsBulkAddOpen(false);
       setBulkHtml('');
+      setBulkFileName('');
       alert('Đã thêm thẻ hàng loạt thành công!');
     } catch (err) {
       alert('Lỗi: ' + (err.response?.data?.detail || err.message));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBulkFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBulkHtml(reader.result || '');
+      setBulkFileName(file.name);
+    };
+    reader.onerror = () => {
+      alert('Không đọc được file HTML');
+      setBulkFileName('');
+    };
+    reader.readAsText(file, 'utf-8');
   };
 
   const openEditModal = (card) => {
@@ -979,10 +996,29 @@ const CardBrowser = () => {
       {isBulkAddOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 min-p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-3xl flex flex-col max-h-[90vh]">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Thêm thẻ hàng loạt (Dán HTML)</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Thêm thẻ hàng loạt (HTML)</h2>
             <p className="text-gray-600 text-sm mb-4">
-              Dán mã HTML chứa các thẻ của bạn vào đây. Các thẻ sẽ được tự động phân loại và thêm vào deck hiện tại.
+              Tải file HTML có sẵn hoặc dán mã HTML chứa các thẻ. Hệ thống sẽ tự động đọc và thêm vào deck hiện tại.
             </p>
+
+            <div className="flex flex-col gap-2 mb-4 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+              <div className="flex items-center gap-3">
+                <label className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">
+                  Chọn file HTML
+                  <input
+                    type="file"
+                    accept=".html,.htm,text/html"
+                    className="hidden"
+                    onChange={handleBulkFileSelect}
+                  />
+                </label>
+                <div className="text-sm text-gray-700">
+                  {bulkFileName ? `Đã chọn: ${bulkFileName}` : 'Chưa chọn file'}
+                </div>
+              </div>
+              <span className="text-xs text-gray-500">Hoặc dán trực tiếp nội dung HTML vào ô bên dưới.</span>
+            </div>
+
             <textarea
               value={bulkHtml}
               onChange={(e) => setBulkHtml(e.target.value)}
@@ -992,7 +1028,7 @@ const CardBrowser = () => {
 
             <div className="flex justify-end gap-3 mt-auto">
               <button
-                onClick={() => setIsBulkAddOpen(false)}
+                onClick={() => { setIsBulkAddOpen(false); setBulkHtml(''); setBulkFileName(''); }}
                 className="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
                 Hủy
