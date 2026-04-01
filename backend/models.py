@@ -32,6 +32,7 @@ class Deck(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_public = Column(Boolean, default=True)
+    allow_card_additions = Column(Boolean, default=True)
     tag = Column(String(255), nullable=True)  # For categorization
 
     # Relationships
@@ -50,6 +51,7 @@ class Card(Base):
     chapter = Column(String(100), nullable=True, index=True, default=None)  # Chapter/section for grouping
     front = Column(Text, nullable=False)
     back = Column(Text, nullable=False)
+    position = Column(Integer, nullable=True, index=True)  # Manual ordering within deck
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

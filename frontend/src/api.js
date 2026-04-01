@@ -33,7 +33,7 @@ export const decksAPI = {
     API.get(`/decks/${deckId}`),
 
   // Get deck cards with sorting and filtering
-  getDeckCards: (deckId, sortBy = 'chapter', chapter = null, search = null) =>
+  getDeckCards: (deckId, sortBy = 'position', chapter = null, search = null) =>
     API.get(`/decks/${deckId}/cards`, { 
       params: { 
         sort_by: sortBy,
@@ -43,8 +43,8 @@ export const decksAPI = {
     }),
 
   // Create new card in deck
-  createCard: (deckId, cardData) =>
-    API.post(`/cards?deck_id=${deckId}`, cardData),
+  createCard: (deckId, cardData, adminOverride = false) =>
+    API.post(`/cards?deck_id=${deckId}`, cardData, { params: { admin_override: adminOverride } }),
 
   // Create new deck
   createDeck: (deckData) =>
@@ -78,8 +78,8 @@ export const decksAPI = {
     API.delete(`/decks/${deckId}`),
 
   // Append HTML to existing deck
-  appendCardsFromHtml: (deckId, htmlContent) =>
-    API.post(`/decks/${deckId}/append-from-html`, { html_content: htmlContent }),
+  appendCardsFromHtml: (deckId, htmlContent, adminOverride = false) =>
+    API.post(`/decks/${deckId}/append-from-html`, { html_content: htmlContent }, { params: { admin_override: adminOverride } }),
 };
 
 // ============== CARD ENDPOINTS ==============
@@ -92,6 +92,10 @@ export const cardsAPI = {
   // Update card
   updateCard: (cardId, cardData) =>
     API.put(`/cards/${cardId}`, cardData),
+
+  // Reorder card
+  reorderCard: (cardId, position) =>
+    API.post(`/cards/${cardId}/reorder`, { position }),
 
   // Delete card
   deleteCard: (cardId) =>

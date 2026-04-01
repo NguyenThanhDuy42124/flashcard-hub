@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decksAPI, cardsAPI } from '../api';
 import CreateCardModal from './CreateCardModal';
@@ -22,7 +22,7 @@ const CardBrowser = () => {
   const [selectedChapter, setSelectedChapter] = useState('Tất cả');
   const [chapters, setChapters] = useState([]);
   const [flippedCards, setFlippedCards] = useState({});
-  const [sortBy, setSortBy] = useState('chapter');
+  const [sortBy, setSortBy] = useState('position');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCards, setSelectedCards] = useState(new Set());
@@ -39,7 +39,26 @@ const CardBrowser = () => {
   const [editOptions, setEditOptions] = useState([]);
   const [editCorrect, setEditCorrect] = useState('');
   const [editExplanation, setEditExplanation] = useState('');
+  const [editPosition, setEditPosition] = useState('');
+  const [togglingAdd, setTogglingAdd] = useState(false);
   const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
+  const addingLocked = deck && deck.allow_card_additions === false && !isAdmin;
+
+  const deriveChapters = (cardList) => [
+    'Tất cả',
+    ...new Set(
+      cardList
+        .map(card => card.chapter || 'General')
+        .filter(ch => ch)
+    )
+  ];
+
+  const reloadCards = useCallback(async () => {
+    const cardsResponse = await decksAPI.getDeckCards(deckId, sortBy, null);
+    const allCards = cardsResponse.data;
+    setCards(allCards);
+    setChapters(deriveChapters(allCards));
+  }, [deckId, sortBy]);
 
   useEffect(() => {
     const fetchDeckAndCards = async () => {
@@ -49,16 +68,7 @@ const CardBrowser = () => {
         setDeck(deckResponse.data);
         setNewTag(deckResponse.data.tag || '');
 
-        const cardsResponse = await decksAPI.getDeckCards(deckId, sortBy, null);
-        const allCards = cardsResponse.data;
-        setCards(allCards);
-
-        const uniqueChapters = ['Tất cả', ...new Set(
-          allCards
-            .map(card => card.chapter || 'General')
-            .filter(ch => ch)
-        )];
-        setChapters(uniqueChapters);
+        await reloadCards();
         setError(null);
       } catch (err) {
         console.error('Failed to fetch deck:', err);
@@ -69,7 +79,7 @@ const CardBrowser = () => {
     };
 
     fetchDeckAndCards();
-  }, [deckId, sortBy]);
+  }, [deckId, sortBy, reloadCards]);
 
   const filteredCards = cards.filter(card => {
     const chapterMatch = selectedChapter === 'Tất cả' || (card.chapter || 'General') === selectedChapter;
@@ -107,10 +117,11 @@ const CardBrowser = () => {
   };
 
   const handleCardCreated = (newCard) => {
-    setCards(prev => [...prev, newCard]);
-    if (newCard.chapter && !chapters.includes(newCard.chapter)) {
-      setChapters(prev => [...prev, newCard.chapter]);
-    }
+    setCards(prev => {
+      const next = [...prev, newCard];
+      setChapters(deriveChapters(next));
+      return next;
+    });
   };
 
   const handleDeleteCard = async (cardId, e) => {
@@ -118,7 +129,11 @@ const CardBrowser = () => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa thẻ này?')) return;
     try {
       await cardsAPI.deleteCard(cardId);
-      setCards(prev => prev.filter(c => c.id !== cardId));
+      setCards(prev => {
+        const next = prev.filter(c => c.id !== cardId);
+        setChapters(deriveChapters(next));
+        return next;
+      });
       setSelectedCards(prev => {
         const next = new Set(prev);
         next.delete(cardId);
@@ -149,7 +164,11 @@ const CardBrowser = () => {
       for (const cardId of selectedCards) {
         await cardsAPI.deleteCard(cardId);
       }
-      setCards(prev => prev.filter(c => !selectedCards.has(c.id)));
+      setCards(prev => {
+        const next = prev.filter(c => !selectedCards.has(c.id));
+        setChapters(deriveChapters(next));
+        return next;
+      });
       setSelectedCards(new Set());
       alert('Đã xóa thành công');
     } catch (err) {
@@ -171,16 +190,8 @@ const CardBrowser = () => {
     if (!bulkHtml.trim()) return;
     try {
       setLoading(true);
-      await decksAPI.appendCardsFromHtml(deckId, bulkHtml);
-      const cardsResponse = await decksAPI.getDeckCards(deckId, sortBy, null);
-      const allCards = cardsResponse.data;
-      setCards(allCards);
-      const uniqueChapters = ['Tất cả', ...new Set(
-        allCards
-          .map(card => card.chapter || 'General')
-          .filter(ch => ch)
-      )];
-      setChapters(uniqueChapters);
+      await decksAPI.appendCardsFromHtml(deckId, bulkHtml, isAdmin && deck?.allow_card_additions === false);
+      await reloadCards();
       setIsBulkAddOpen(false);
       setBulkHtml('');
       setBulkFileName('');
@@ -210,6 +221,7 @@ const CardBrowser = () => {
   const openEditModal = (card) => {
     const quizMeta = parseQuizMeta(card);
     setEditCard(card);
+    setEditPosition(card.position ? String(card.position) : '');
     if (quizMeta) {
       setEditForm({
         front: card.front || '',
@@ -241,6 +253,7 @@ const CardBrowser = () => {
       setLoading(true);
       const quizMeta = parseQuizMeta(editCard);
       let payload;
+      const positionValue = editPosition ? parseInt(editPosition, 10) : null;
 
       if (quizMeta) {
         const optionsObject = {};
@@ -259,6 +272,7 @@ const CardBrowser = () => {
           back: '__QUIZ__::' + JSON.stringify(meta),
           title: editForm.front.trim() || null,
           chapter: editForm.chapter || null,
+          position: positionValue || undefined,
         };
       } else {
         payload = {
@@ -266,11 +280,12 @@ const CardBrowser = () => {
           back: editForm.back.trim(),
           title: editForm.title.trim() || null,
           chapter: editForm.chapter || null,
+          position: positionValue || undefined,
         };
       }
 
       await cardsAPI.updateCard(editCard.id, payload);
-      setCards(prev => prev.map(c => (c.id === editCard.id ? { ...c, ...payload } : c)));
+      await reloadCards();
       setIsEditOpen(false);
       setEditCard(null);
     } catch (err) {
@@ -294,6 +309,46 @@ const CardBrowser = () => {
 
   const removeEditOption = (index) => {
     setEditOptions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleReorder = async (card, direction, e) => {
+    e?.stopPropagation();
+    if (!isAdmin) return;
+    if (sortBy !== 'position') {
+      alert('Hãy sắp xếp theo thứ tự để thay đổi vị trí.');
+      return;
+    }
+
+    const ordered = [...cards].sort((a, b) => (a.position || 0) - (b.position || 0));
+    const idx = ordered.findIndex(c => c.id === card.id);
+    if (idx === -1) return;
+    let targetPos = ordered[idx].position || idx + 1;
+
+    if (direction === 'up') targetPos = Math.max(1, targetPos - 1);
+    if (direction === 'down') targetPos = Math.min(ordered.length, targetPos + 1);
+    if (direction === 'top') targetPos = 1;
+    if (direction === 'bottom') targetPos = ordered.length;
+
+    try {
+      await cardsAPI.reorderCard(card.id, targetPos);
+      await reloadCards();
+    } catch (err) {
+      alert('Không thể đổi vị trí: ' + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const handleToggleAdding = async () => {
+    if (!deck) return;
+    const nextValue = !(deck.allow_card_additions ?? true);
+    try {
+      setTogglingAdd(true);
+      await decksAPI.updateDeck(deckId, { allow_card_additions: nextValue });
+      setDeck(prev => prev ? { ...prev, allow_card_additions: nextValue } : prev);
+    } catch (err) {
+      alert('Không thể cập nhật quyền thêm thẻ: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setTogglingAdd(false);
+    }
   };
 
   if (loading) {
@@ -351,19 +406,32 @@ const CardBrowser = () => {
             >
               ← Quay lại
             </button>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="px-3 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition text-sm whitespace-nowrap"
-              >
-                + Thêm 1 Card
-              </button>
-              <button
-                onClick={() => setIsBulkAddOpen(true)}
-                className="px-3 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition text-sm whitespace-nowrap"
-              >
-                + Thêm hàng loạt
-              </button>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { if (!addingLocked) setIsModalOpen(true); else alert('Deck đã khóa, không thể thêm thẻ.'); }}
+                  disabled={addingLocked}
+                  className={`px-3 sm:px-6 py-2 rounded-lg font-medium transition text-sm whitespace-nowrap ${addingLocked ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                >
+                  + Thêm 1 Card
+                </button>
+                <button
+                  onClick={() => { if (!addingLocked) setIsBulkAddOpen(true); else alert('Deck đã khóa, không thể thêm thẻ.'); }}
+                  disabled={addingLocked}
+                  className={`px-3 sm:px-6 py-2 rounded-lg font-medium transition text-sm whitespace-nowrap ${addingLocked ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                >
+                  + Thêm hàng loạt
+                </button>
+              </div>
+              {isAdmin && (
+                <button
+                  onClick={handleToggleAdding}
+                  disabled={togglingAdd}
+                  className={`px-3 sm:px-6 py-2 rounded-lg font-medium transition text-sm whitespace-nowrap ${togglingAdd ? 'bg-gray-400 text-white cursor-wait' : (deck?.allow_card_additions === false ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-amber-500 text-white hover:bg-amber-600')}`}
+                >
+                  {deck?.allow_card_additions === false ? 'Bật lại cho user được thêm thẻ' : 'Khóa thêm thẻ cho user'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -437,6 +505,7 @@ const CardBrowser = () => {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
               >
+                <option value="position">📌 Sắp xếp theo Thứ tự</option>
                 <option value="chapter">📚 Sắp xếp theo Chương</option>
                 <option value="title">📝 Sắp xếp theo Tiêu đề</option>
                 <option value="created">🕐 Mới nhất trước</option>
@@ -577,20 +646,38 @@ const CardBrowser = () => {
                             </div>
                           )}
                           {isAdmin && (
-                            <div className="absolute top-4 right-16 flex gap-2">
-                              <input
-                                type="checkbox"
-                                checked={selectedCards.has(card.id)}
-                                onChange={(e) => toggleSelectCard(card.id, e)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-5 h-5 cursor-pointer accent-red-500"
-                              />
-                              <button
-                                onClick={(e) => handleDeleteCard(card.id, e)}
-                                className="text-red-500 hover:text-red-700 bg-red-50 rounded px-2 text-xs"
-                              >
-                                Xóa
-                              </button>
+                            <div className="absolute top-3 right-3 flex flex-col items-end gap-2 text-xs">
+                              <div className="flex items-center gap-2 bg-white/90 rounded-lg px-2 py-1 shadow-sm text-gray-700">
+                                <span className="font-semibold">Vị trí</span>
+                                <span className="text-blue-600 font-bold">{card.position ?? '—'}</span>
+                              </div>
+                              <div className="flex gap-1">
+                                <button onClick={(e) => handleReorder(card, 'top', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">⏫</button>
+                                <button onClick={(e) => handleReorder(card, 'up', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">↑</button>
+                                <button onClick={(e) => handleReorder(card, 'down', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">↓</button>
+                                <button onClick={(e) => handleReorder(card, 'bottom', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">⏬</button>
+                              </div>
+                              <div className="flex gap-2 items-center bg-white/90 px-2 py-1 rounded-lg shadow-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedCards.has(card.id)}
+                                  onChange={(e) => toggleSelectCard(card.id, e)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-5 h-5 cursor-pointer accent-red-500"
+                                />
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openEditModal(card); }}
+                                  className="text-blue-500 hover:text-blue-700 bg-blue-50 rounded px-2 text-xs"
+                                >
+                                  Sửa
+                                </button>
+                                <button
+                                  onClick={(e) => handleDeleteCard(card.id, e)}
+                                  className="text-red-500 hover:text-red-700 bg-red-50 rounded px-2 text-xs"
+                                >
+                                  Xóa
+                                </button>
+                              </div>
                             </div>
                           )}
                           <span className="absolute top-4 right-4 text-gray-300 font-mono">#{card.id}</span>
@@ -679,8 +766,19 @@ const CardBrowser = () => {
                         ))}
                       </div>
 
-                        {isAdmin && (
-                          <div className="absolute top-4 right-16 flex gap-2">
+                      {isAdmin && (
+                        <div className="absolute top-3 right-3 flex flex-col items-end gap-2 text-xs">
+                          <div className="flex items-center gap-2 bg-white/90 rounded-lg px-2 py-1 shadow-sm text-gray-700">
+                            <span className="font-semibold">Vị trí</span>
+                            <span className="text-blue-600 font-bold">{card.position ?? '—'}</span>
+                          </div>
+                          <div className="flex gap-1">
+                            <button onClick={(e) => handleReorder(card, 'top', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">⏫</button>
+                            <button onClick={(e) => handleReorder(card, 'up', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">↑</button>
+                            <button onClick={(e) => handleReorder(card, 'down', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">↓</button>
+                            <button onClick={(e) => handleReorder(card, 'bottom', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">⏬</button>
+                          </div>
+                          <div className="flex gap-2 items-center bg-white/90 px-2 py-1 rounded-lg shadow-sm">
                             <input
                               type="checkbox"
                               checked={selectedCards.has(card.id)}
@@ -701,7 +799,7 @@ const CardBrowser = () => {
                               Xóa
                             </button>
                           </div>
-                        )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -758,26 +856,38 @@ const CardBrowser = () => {
                         )}
 
                         {isAdmin && (
-                          <div className="absolute top-4 right-16 flex gap-2">
-                            <input
-                              type="checkbox"
-                              checked={selectedCards.has(card.id)}
-                              onChange={(e) => toggleSelectCard(card.id, e)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-5 h-5 cursor-pointer accent-red-500"
-                            />
-                            <button
-                              onClick={(e) => { e.stopPropagation(); openEditModal(card); }}
-                              className="text-blue-500 hover:text-blue-700 bg-blue-50 rounded px-2 text-xs"
-                            >
-                              Sửa
-                            </button>
-                            <button
-                              onClick={(e) => handleDeleteCard(card.id, e)}
-                              className="text-red-500 hover:text-red-700 bg-red-50 rounded px-2 text-xs"
-                            >
-                              Xóa
-                            </button>
+                          <div className="absolute top-3 right-3 flex flex-col items-end gap-2 text-xs">
+                            <div className="flex items-center gap-2 bg-white/90 rounded-lg px-2 py-1 shadow-sm text-gray-700">
+                              <span className="font-semibold">Vị trí</span>
+                              <span className="text-blue-600 font-bold">{card.position ?? '—'}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              <button onClick={(e) => handleReorder(card, 'top', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">⏫</button>
+                              <button onClick={(e) => handleReorder(card, 'up', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">↑</button>
+                              <button onClick={(e) => handleReorder(card, 'down', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">↓</button>
+                              <button onClick={(e) => handleReorder(card, 'bottom', e)} className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700">⏬</button>
+                            </div>
+                            <div className="flex gap-2 items-center bg-white/90 px-2 py-1 rounded-lg shadow-sm">
+                              <input
+                                type="checkbox"
+                                checked={selectedCards.has(card.id)}
+                                onChange={(e) => toggleSelectCard(card.id, e)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-5 h-5 cursor-pointer accent-red-500"
+                              />
+                              <button
+                                onClick={(e) => { e.stopPropagation(); openEditModal(card); }}
+                                className="text-blue-500 hover:text-blue-700 bg-blue-50 rounded px-2 text-xs"
+                              >
+                                Sửa
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteCard(card.id, e)}
+                                className="text-red-500 hover:text-red-700 bg-red-50 rounded px-2 text-xs"
+                              >
+                                Xóa
+                              </button>
+                            </div>
                           </div>
                         )}
 
@@ -857,6 +967,7 @@ const CardBrowser = () => {
         onClose={() => setIsModalOpen(false)}
         onCardCreated={handleCardCreated}
         chapters={chapters.filter(ch => ch !== 'Tất cả')}
+        adminOverride={isAdmin && deck?.allow_card_additions === false}
       />
 
       {/* Edit Card Modal */}
@@ -868,7 +979,7 @@ const CardBrowser = () => {
               <button onClick={() => setIsEditOpen(false)} className="text-gray-500 hover:text-gray-700 text-xl">×</button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700">Tiêu đề (optional)</label>
                 <input
@@ -887,6 +998,17 @@ const CardBrowser = () => {
                   onChange={(e) => setEditForm(prev => ({ ...prev, chapter: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="VD: Chương 1"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Vị trí (số thứ tự)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editPosition}
+                  onChange={(e) => setEditPosition(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập số thứ tự mới"
                 />
               </div>
             </div>

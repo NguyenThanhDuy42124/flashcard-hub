@@ -10,6 +10,7 @@ class CardBase(BaseModel):
     back: str
     title: Optional[str] = None  # Card question/title
     chapter: Optional[str] = None  # Chapter/section
+    position: Optional[int] = None  # Manual ordering
 
 
 class CardCreate(CardBase):
@@ -34,6 +35,7 @@ class DeckBase(BaseModel):
     description: Optional[str] = None
     tag: Optional[str] = None
     is_public: bool = True
+    allow_card_additions: bool = True
 
 
 class DeckCreate(DeckBase):
@@ -47,6 +49,7 @@ class DeckUpdate(BaseModel):
     description: Optional[str] = None
     tag: Optional[str] = None
     is_public: Optional[bool] = None
+    allow_card_additions: Optional[bool] = None
 
 
 class CreateDeckFromHTMLRequest(BaseModel):

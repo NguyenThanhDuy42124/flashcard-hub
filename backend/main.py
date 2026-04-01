@@ -1,8 +1,9 @@
 """FastAPI main application with all routes."""
-from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Query, Request, Form
+from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Query, Request, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime, timedelta
 from typing import List
 from pathlib import Path
@@ -41,6 +42,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("flashcard_hub")
 access_logger = logging.getLogger("uvicorn.access")
+access_stream_handler = logging.StreamHandler(stream=sys.stdout)
+access_stream_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+access_logger.addHandler(access_stream_handler)
+access_logger.setLevel(logging.INFO)
+access_logger.propagate = False
 
 # Initialize database schema
 try:
@@ -49,10 +55,11 @@ try:
     from sqlalchemy import text, inspect
     
     def ensure_card_columns_exist():
-        """Ensure cards table has title and chapter columns."""
+        """Ensure cards and decks tables have required columns."""
         try:
             inspector = inspect(engine)
             card_columns = [col['name'] for col in inspector.get_columns('cards')]
+            deck_columns = [col['name'] for col in inspector.get_columns('decks')]
             
             if 'title' not in card_columns:
                 logger.warning("⚠️ Adding missing 'title' column to cards table")
@@ -64,6 +71,18 @@ try:
                 logger.warning("⚠️ Adding missing 'chapter' column to cards table")
                 with engine.connect() as conn:
                     conn.execute(text("ALTER TABLE cards ADD COLUMN chapter VARCHAR(100)"))
+                    conn.commit()
+
+            if 'position' not in card_columns:
+                logger.warning("⚠️ Adding missing 'position' column to cards table")
+                with engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE cards ADD COLUMN position INTEGER"))
+                    conn.commit()
+
+            if 'allow_card_additions' not in deck_columns:
+                logger.warning("⚠️ Adding missing 'allow_card_additions' column to decks table")
+                with engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE decks ADD COLUMN allow_card_additions BOOLEAN DEFAULT 1"))
                     conn.commit()
             
             logger.info("✅ Card columns verified")
@@ -149,6 +168,50 @@ except ImportError:
     # Fallback: create all tables (only for development)
     Base.metadata.create_all(bind=engine)
 
+
+def normalize_card_positions(db: Session, deck_id: int):
+    """Ensure every card in the deck has a sequential position."""
+    cards = db.query(Card).filter(Card.deck_id == deck_id).order_by(Card.position.nulls_last(), Card.created_at).all()
+    changed = False
+    for idx, card in enumerate(cards, start=1):
+        if card.position is None or card.position != idx:
+            card.position = idx
+            changed = True
+    if changed:
+        db.commit()
+
+
+def move_card_to_position(db: Session, card: Card, new_position: int):
+    """Reorder card inside its deck, shifting neighbors accordingly."""
+    normalize_card_positions(db, card.deck_id)
+
+    total_cards = db.query(Card).filter(Card.deck_id == card.deck_id).count()
+    target_pos = max(1, min(new_position, total_cards))
+
+    if card.position is None:
+        card.position = total_cards
+
+    if target_pos == card.position:
+        return
+
+    if target_pos < card.position:
+        db.query(Card).filter(
+            Card.deck_id == card.deck_id,
+            Card.position >= target_pos,
+            Card.position < card.position,
+            Card.id != card.id
+        ).update({Card.position: Card.position + 1}, synchronize_session=False)
+    else:
+        db.query(Card).filter(
+            Card.deck_id == card.deck_id,
+            Card.position <= target_pos,
+            Card.position > card.position,
+            Card.id != card.id
+        ).update({Card.position: Card.position - 1}, synchronize_session=False)
+
+    card.position = target_pos
+    db.commit()
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Flashcard Hub API",
@@ -177,17 +240,24 @@ async def add_secure_headers(request, call_next):
 # Simple request logger to surface IP/User-Agent for monitoring
 @app.middleware("http")
 async def log_request_meta(request: Request, call_next):
-    client_ip = request.client.host if request.client else "unknown"
+    forwarded_for = request.headers.get("x-forwarded-for")
+    client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "unknown")
     ua = request.headers.get("user-agent", "")
     referer = request.headers.get("referer", "")
+    user_header = request.headers.get("x-user") or request.headers.get("x-user-id") or "anonymous"
 
     try:
         response = await call_next(request)
         return response
     finally:
-        msg = f"🌐 {request.method} {request.url.path} | IP={client_ip} | UA={ua} | Referer={referer}"
+        msg = (
+            f"🌐 {request.method} {request.url.path} "
+            f"| user={user_header} | ip={client_ip} | forwarded={forwarded_for or '-'} "
+            f"| ua={ua} | referer={referer or '-'}"
+        )
         # Send to uvicorn access logger so it shows up in terminal
         access_logger.info(msg)
+        print(msg, flush=True)
 
 
 # ============== DECK ENDPOINTS ==============
@@ -232,7 +302,8 @@ async def create_deck(
         description=deck_data.description,
         owner_id=user_id,
         tag=deck_data.tag,
-        is_public=deck_data.is_public
+        is_public=deck_data.is_public,
+        allow_card_additions=deck_data.allow_card_additions
     )
     db.add(new_deck)
     db.flush()
@@ -380,7 +451,7 @@ async def get_deck(deck_id: int, db: Session = Depends(get_db)):
 @app.get("/api/decks/{deck_id}/cards", response_model=List[CardResponse])
 async def get_deck_cards(
     deck_id: int,
-    sort_by: str = Query("chapter", description="Sort by: chapter, title, created"),
+    sort_by: str = Query("position", description="Sort by: position, chapter, title, created"),
     chapter: str = Query(None, description="Filter by chapter"),
     search: str = Query(None, description="Search by title"),
     db: Session = Depends(get_db)
@@ -409,11 +480,13 @@ async def get_deck_cards(
         
         # Sort results
         if sort_by == "title":
-            cards = query.order_by(Card.title).all()
+            cards = query.order_by(Card.title, Card.position.nulls_last()).all()
         elif sort_by == "created":
             cards = query.order_by(Card.created_at.desc()).all()
-        else:  # default to chapter
-            cards = query.order_by(Card.chapter, Card.created_at).all()
+        elif sort_by == "chapter":
+            cards = query.order_by(Card.chapter, Card.position.nulls_last(), Card.created_at).all()
+        else:  # position is default
+            cards = query.order_by(Card.position.nulls_last(), Card.created_at).all()
         
         logger.info(f"✅ Found {len(cards)} cards for deck '{deck.title}'")
         return cards
@@ -449,6 +522,8 @@ async def update_deck(
         deck.tag = deck_data.tag
     if deck_data.is_public is not None:
         deck.is_public = deck_data.is_public
+    if deck_data.allow_card_additions is not None:
+        deck.allow_card_additions = deck_data.allow_card_additions
 
     deck.updated_at = datetime.utcnow()
 
@@ -483,7 +558,8 @@ async def delete_deck(
 async def append_cards_from_html(
     deck_id: int,
     request: AppendHTMLRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin_override: bool = Query(False)
 ):
     try:
         from parser import parse_html_file
@@ -492,19 +568,28 @@ async def append_cards_from_html(
         deck = db.query(Deck).filter(Deck.id == deck_id).first()
         if not deck:
             raise HTTPException(status_code=404, detail="Deck not found")
+
+        if not deck.allow_card_additions and not admin_override:
+            raise HTTPException(status_code=403, detail="Deck đã khoá thêm thẻ")
         # Nếu deck chưa có tag, gán theo loại phát hiện từ nội dung
         if not deck.tag and parsed_data.get('tag'):
             deck.tag = parsed_data.get('tag')
             
         added_cards = []
+        # Determine current max position in this deck
+        max_pos = db.query(func.max(Card.position)).filter(Card.deck_id == deck_id).scalar()
+        next_pos = (max_pos or 0) + 1
+
         for card_data in parsed_data['cards']:
             new_card = Card(
                 deck_id=deck_id,
                 front=card_data['front'],
                 back=card_data['back'],
                 title=card_data.get('title'),
-                chapter=card_data.get('chapter')
+                chapter=card_data.get('chapter'),
+                position=card_data.get('position') or next_pos
             )
+            next_pos += 1
             db.add(new_card)
             added_cards.append(new_card)
             
@@ -521,7 +606,8 @@ async def append_cards_from_html(
 async def create_card(
     deck_id: int,
     card_data: CardCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin_override: bool = Query(False)
 ):
     """Create a new card in a deck with title and chapter."""
     deck = db.query(Deck).filter(Deck.id == deck_id).first()
@@ -529,12 +615,19 @@ async def create_card(
     if not deck:
         raise HTTPException(status_code=404, detail="Deck not found")
 
+    if not deck.allow_card_additions and not admin_override:
+        raise HTTPException(status_code=403, detail="Deck đã khoá thêm thẻ")
+
+    max_pos = db.query(func.max(Card.position)).filter(Card.deck_id == deck_id).scalar()
+    next_pos = (max_pos or 0) + 1
+
     new_card = Card(
         deck_id=deck_id,
         title=card_data.title,
         chapter=card_data.chapter,
         front=card_data.front,
-        back=card_data.back
+        back=card_data.back,
+        position=card_data.position or next_pos
     )
     db.add(new_card)
     db.commit()
@@ -557,11 +650,26 @@ async def update_card(
 
     card.front = card_data.front
     card.back = card_data.back
+    if card_data.position:
+        move_card_to_position(db, card, int(card_data.position))
     card.updated_at = datetime.utcnow()
 
     db.commit()
     db.refresh(card)
 
+    return card
+
+
+@app.post("/api/cards/{card_id}/reorder", response_model=CardResponse)
+async def reorder_card(card_id: int, position: int = Body(..., embed=True), db: Session = Depends(get_db)):
+    """Move a card to a new position and shift others."""
+    card = db.query(Card).filter(Card.id == card_id).first()
+
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    move_card_to_position(db, card, int(position))
+    db.refresh(card)
     return card
 
 

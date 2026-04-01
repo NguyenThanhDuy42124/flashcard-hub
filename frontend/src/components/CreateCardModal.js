@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { decksAPI } from '../api';
 
-const CreateCardModal = ({ deckId, isOpen, onClose, onCardCreated, chapters = [] }) => {
+const CreateCardModal = ({ deckId, isOpen, onClose, onCardCreated, chapters = [], adminOverride = false }) => {
   const [formData, setFormData] = useState({
     title: '',
     chapter: '',
@@ -31,7 +31,7 @@ const CreateCardModal = ({ deckId, isOpen, onClose, onCardCreated, chapters = []
         chapter: formData.chapter,
         front: formData.front,
         back: formData.back
-      });
+      }, adminOverride);
 
       // Reset form
       setFormData({

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { decksAPI } from '../api';
 
@@ -18,11 +18,7 @@ const DeckList = () => {
   const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchDecks();
-  }, [selectedTag]);
-
-  const fetchDecks = async () => {
+  const fetchDecks = useCallback(async () => {
     try {
       setLoading(true);
       const response = await decksAPI.listDecks(0, 50, selectedTag);
@@ -37,7 +33,11 @@ const DeckList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedTag]);
+
+  useEffect(() => {
+    fetchDecks();
+  }, [fetchDecks]);
 
   const handleDelete = async (deckId) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa deck này không?')) {
