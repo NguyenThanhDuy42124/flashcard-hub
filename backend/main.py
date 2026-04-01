@@ -40,6 +40,7 @@ logging.basicConfig(
     handlers=[logging_handler]
 )
 logger = logging.getLogger("flashcard_hub")
+access_logger = logging.getLogger("uvicorn.access")
 
 # Initialize database schema
 try:
@@ -171,6 +172,22 @@ async def add_secure_headers(request, call_next):
     response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
     response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
     return response
+
+
+# Simple request logger to surface IP/User-Agent for monitoring
+@app.middleware("http")
+async def log_request_meta(request: Request, call_next):
+    client_ip = request.client.host if request.client else "unknown"
+    ua = request.headers.get("user-agent", "")
+    referer = request.headers.get("referer", "")
+
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        msg = f"🌐 {request.method} {request.url.path} | IP={client_ip} | UA={ua} | Referer={referer}"
+        # Send to uvicorn access logger so it shows up in terminal
+        access_logger.info(msg)
 
 
 # ============== DECK ENDPOINTS ==============
