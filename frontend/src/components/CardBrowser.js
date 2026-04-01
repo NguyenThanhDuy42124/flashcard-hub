@@ -577,7 +577,7 @@ const CardBrowser = () => {
                             </div>
                           )}
                           <span className="absolute top-4 right-4 text-gray-300 font-mono">#{card.id}</span>
-                          <h2 className="text-sm font-semibold text-gray-500 mb-2 mt-4 max-h-10 overflow-hidden line-clamp-2">
+                          <h2 className="text-base md:text-lg font-semibold text-blue-700 mb-2 mt-6 max-h-14 overflow-hidden line-clamp-2 leading-snug">
                             {card.title || 'Câu hỏi'}
                           </h2>
                           <h3 className="text-xl md:text-2xl font-bold text-gray-800 leading-snug flex-1 flex items-center">{card.front}</h3>
