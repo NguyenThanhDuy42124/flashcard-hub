@@ -29,7 +29,7 @@ const ExamCreator = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await decksAPI.listDecks(0, 200, null);
+        const res = await decksAPI.listDecks(0, 100, null);
         setDecks(res.data);
       } catch (err) {
         setError(err.response?.data?.detail || 'Không tải được danh sách deck');
