@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 import os
 import sys
@@ -14,6 +14,8 @@ import logging
 import json
 import html
 from io import BytesIO
+import math
+import random
 
 from docx import Document
 
@@ -35,7 +37,7 @@ from schemas import (
     CardCreate, CardResponse, DeckCreate, DeckUpdate, DeckResponse,
     UserCreate, UserResponse, CardReviewRequest, StudySessionCreate,
     StudySessionResponse, UserProgressResponse, CreateDeckFromHTMLRequest,
-    AppendHTMLRequest
+    AppendHTMLRequest, ExamCreateRequest, ExamCreateResponse
 )
 from parser import parse_html_file
 from srs_engine import sm2_engine
@@ -53,6 +55,15 @@ access_stream_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
 access_logger.addHandler(access_stream_handler)
 access_logger.setLevel(logging.INFO)
 access_logger.propagate = False
+
+TIME_LIMIT_OPTIONS = {
+    "1h": timedelta(hours=1),
+    "2h": timedelta(hours=2),
+    "3h": timedelta(hours=3),
+    "1w": timedelta(weeks=1),
+    "1m": timedelta(days=30),
+    "unlimited": None,
+}
 
 # Initialize database schema
 try:
@@ -392,6 +403,48 @@ async def log_request_meta(request: Request, call_next):
         # Send to uvicorn access logger so it shows up in terminal
         access_logger.info(msg)
         print(msg, flush=True)
+
+
+def select_cards_for_deck(cards: List[Card], count: int, scope: str = "deck") -> List[Card]:
+    """Randomly select cards with optional chapter balancing."""
+    if count <= 0 or not cards:
+        return []
+
+    if scope == "chapter":
+        grouped = {}
+        for card in cards:
+            grouped.setdefault(card.chapter or "Khác", []).append(card)
+
+        selected: List[Card] = []
+        # Round-robin pull across chapters to stay balanced
+        while grouped and len(selected) < min(count, sum(len(v) for v in grouped.values())):
+            for chapter in list(grouped.keys()):
+                bucket = grouped.get(chapter, [])
+                if not bucket:
+                    grouped.pop(chapter, None)
+                    continue
+                pick = bucket.pop(random.randrange(len(bucket)))
+                selected.append(pick)
+                if not bucket:
+                    grouped.pop(chapter, None)
+                if len(selected) >= count:
+                    break
+
+        # If we still need more (deck có ít thẻ), allow repeats to fill
+        if len(selected) < count:
+            selected.extend(random.choices(cards, k=count - len(selected)))
+
+        return selected[:count]
+
+    pool = list(cards)
+    random.shuffle(pool)
+    if len(pool) >= count:
+        return pool[:count]
+
+    # Not enough unique cards -> allow repeats to reach the target count
+    result = pool[:]
+    result.extend(random.choices(pool, k=count - len(result)))
+    return result[:count]
 
 
 # ============== DECK ENDPOINTS ==============
@@ -762,6 +815,117 @@ async def append_cards_from_html(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/exams/create", response_model=ExamCreateResponse)
+async def create_exam_deck(
+    exam_data: ExamCreateRequest,
+    db: Session = Depends(get_db),
+    user_id: int = 1
+):
+    """Generate an exam deck by mixing questions from multiple decks using percentages."""
+    if not exam_data.selections:
+        raise HTTPException(status_code=400, detail="Chưa chọn deck nào")
+
+    if exam_data.total_questions <= 0:
+        raise HTTPException(status_code=400, detail="Tổng số câu phải > 0")
+
+    if exam_data.random_scope not in ("deck", "chapter"):
+        raise HTTPException(status_code=400, detail="random_scope không hợp lệ")
+
+    valid_selections = [s for s in exam_data.selections if s.percentage > 0]
+    if not valid_selections:
+        raise HTTPException(status_code=400, detail="Phần trăm phải lớn hơn 0")
+
+    percent_sum = sum(sel.percentage for sel in valid_selections)
+    if percent_sum <= 0:
+        raise HTTPException(status_code=400, detail="Tổng phần trăm không hợp lệ")
+
+    # Normalize distribution and allocate leftover by fractional part
+    distribution = []
+    for sel in valid_selections:
+        weight = sel.percentage / percent_sum
+        ideal = weight * exam_data.total_questions
+        base = math.floor(ideal)
+        frac = ideal - base
+        distribution.append({"deck_id": sel.deck_id, "count": base, "frac": frac})
+
+    remainder = exam_data.total_questions - sum(item["count"] for item in distribution)
+    distribution.sort(key=lambda x: x["frac"], reverse=True)
+    for i in range(remainder):
+        distribution[i % len(distribution)]["count"] += 1
+
+    selected_cards: List[Card] = []
+    all_cards_pool: List[Card] = []
+
+    for item in distribution:
+        deck = db.query(Deck).filter(Deck.id == item["deck_id"]).first()
+        if not deck:
+            raise HTTPException(status_code=404, detail=f"Deck {item['deck_id']} không tồn tại")
+
+        cards = db.query(Card).filter(Card.deck_id == deck.id).all()
+        all_cards_pool.extend(cards)
+
+        if item["count"] <= 0:
+            continue
+
+        selected_cards.extend(
+            select_cards_for_deck(cards, item["count"], exam_data.random_scope)
+        )
+
+    # Fallback: if not enough unique cards, top up from pooled cards
+    if len(selected_cards) < exam_data.total_questions and all_cards_pool:
+        deficit = exam_data.total_questions - len(selected_cards)
+        selected_cards.extend(random.choices(all_cards_pool, k=deficit))
+
+    # Shuffle to mix decks together
+    random.shuffle(selected_cards)
+
+    time_delta = None
+    if exam_data.time_limit:
+        if exam_data.time_limit not in TIME_LIMIT_OPTIONS:
+            raise HTTPException(status_code=400, detail="Thời gian không hợp lệ")
+        time_delta = TIME_LIMIT_OPTIONS.get(exam_data.time_limit)
+
+    expires_at: Optional[datetime] = None
+    if time_delta:
+        expires_at = datetime.utcnow() + time_delta
+
+    description = exam_data.description or "Đề thi trộn từ nhiều deck"
+    if exam_data.time_limit and exam_data.time_limit != "unlimited":
+        description = f"{description} | Thời gian: {exam_data.time_limit}"
+
+    exam_deck = Deck(
+        title=exam_data.title,
+        description=description,
+        owner_id=user_id,
+        tag="exam",
+        is_public=True,
+        allow_card_additions=False
+    )
+    db.add(exam_deck)
+    db.flush()
+
+    for card in selected_cards:
+        new_card = Card(
+            deck_id=exam_deck.id,
+            title=card.title,
+            chapter=card.chapter,
+            front=card.front,
+            back=card.back,
+            position=None
+        )
+        db.add(new_card)
+
+    db.commit()
+    db.refresh(exam_deck)
+
+    return ExamCreateResponse(
+        exam_deck_id=exam_deck.id,
+        deck_title=exam_deck.title,
+        total_questions=len(selected_cards),
+        expires_at=expires_at,
+    )
 
 
 # ============== CARD ENDPOINTS ==============

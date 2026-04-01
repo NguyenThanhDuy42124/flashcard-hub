@@ -129,3 +129,25 @@ class UserProgressResponse(BaseModel):
 
 class AppendHTMLRequest(BaseModel):
     html_content: str
+
+
+class ExamDeckSelection(BaseModel):
+    deck_id: int
+    percentage: float
+
+
+class ExamCreateRequest(BaseModel):
+    title: str
+    description: Optional[str] = None
+    selections: List[ExamDeckSelection]
+    total_questions: int
+    random_scope: str = "deck"  # deck or chapter
+    time_limit: Optional[str] = None  # 1h,2h,3h,1w,1m,unlimited
+
+
+class ExamCreateResponse(BaseModel):
+    exam_deck_id: int
+    deck_title: str
+    total_questions: int
+    expires_at: Optional[datetime] = None
+    tag: str = "exam"

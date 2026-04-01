@@ -5,6 +5,7 @@ import Uploader from './components/Uploader';
 import DeckBuilder from './components/DeckBuilder';
 import CardBrowser from './components/CardBrowser';
 import Login from './components/Login';
+import ExamCreator from './components/ExamCreator';
 import { studyAPI } from './api';
 
 function App() {
@@ -93,6 +94,7 @@ function App() {
             <Route path="/upload" element={<Uploader onUploadSuccess={() => fetchUserProgress()} />} />
             <Route path="/deck/:deckId/cards" element={<CardBrowser />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/exam/create" element={<ExamCreator />} />
           </Routes>
         </main>
       </div>

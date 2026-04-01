@@ -32,6 +32,10 @@ const CardBrowser = () => {
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [bulkHtml, setBulkHtml] = useState('');
   const [bulkFileName, setBulkFileName] = useState('');
+  const [isBulkChapterOpen, setIsBulkChapterOpen] = useState(false);
+  const [bulkChapter, setBulkChapter] = useState('');
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [editFocus, setEditFocus] = useState(null);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editCard, setEditCard] = useState(null);
@@ -192,6 +196,39 @@ const CardBrowser = () => {
     }
   };
 
+  const handleBulkChapterUpdate = async () => {
+    if (selectedCards.size === 0) return;
+    const newChapter = bulkChapter.trim();
+    setBulkUpdating(true);
+    try {
+      for (const cardId of selectedCards) {
+        const card = cards.find(c => c.id === cardId);
+        if (!card) continue;
+        await cardsAPI.updateCard(cardId, {
+          front: card.front || '',
+          back: card.back || '',
+          title: card.title || '',
+          chapter: newChapter || null,
+          position: card.position || undefined,
+        });
+      }
+
+      setCards(prev => {
+        const updated = prev.map(c => selectedCards.has(c.id) ? { ...c, chapter: newChapter || null } : c);
+        setChapters(deriveChapters(updated));
+        return updated;
+      });
+
+      alert('Đã cập nhật chương cho thẻ đã chọn');
+      setIsBulkChapterOpen(false);
+      setBulkChapter('');
+    } catch (err) {
+      alert('Lỗi khi cập nhật chương hàng loạt');
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
   const handleSelectFiltered = (mode) => {
     setSelectedCards(prev => {
       const next = new Set(prev);
@@ -253,8 +290,14 @@ const CardBrowser = () => {
     reader.readAsText(file, 'utf-8');
   };
 
-  const openEditModal = (card) => {
+  const closeEditModal = () => {
+    setIsEditOpen(false);
+    setEditFocus(null);
+  };
+
+  const openEditModal = (card, focusField = null) => {
     const quizMeta = parseQuizMeta(card);
+    setEditFocus(focusField);
     setEditCard(card);
     setEditPosition(card.position ? String(card.position) : '');
     if (quizMeta) {
@@ -321,7 +364,7 @@ const CardBrowser = () => {
 
       await cardsAPI.updateCard(editCard.id, payload);
       await reloadCards();
-      setIsEditOpen(false);
+      closeEditModal();
       setEditCard(null);
     } catch (err) {
       alert('Lỗi khi cập nhật thẻ: ' + (err.response?.data?.detail || err.message));
@@ -622,6 +665,14 @@ const CardBrowser = () => {
                   🗑️ Xóa ({selectedCards.size})
                 </button>
               )}
+              {isAdmin && selectedCards.size > 0 && (
+                <button
+                  onClick={() => setIsBulkChapterOpen(true)}
+                  className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition text-sm whitespace-nowrap"
+                >
+                  ✏️ Sửa chương ({selectedCards.size})
+                </button>
+              )}
             </div>
 
             <div className="text-xs sm:text-sm text-gray-600 font-medium text-center sm:text-right order-1 sm:order-2 shrink-0">
@@ -735,8 +786,17 @@ const CardBrowser = () => {
                           style={{ backfaceVisibility: 'hidden' }}
                         >
                           {card.chapter && (
-                            <div className="absolute top-4 left-4 bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                              {card.chapter}
+                            <div className="absolute top-4 left-4 bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                              <span>{card.chapter}</span>
+                              {isAdmin && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); openEditModal(card, 'chapter'); }}
+                                  className="text-blue-600 hover:text-blue-800"
+                                  title="Sửa chương"
+                                >
+                                  ✎
+                                </button>
+                              )}
                             </div>
                           )}
                           {isAdmin && (
@@ -828,6 +888,15 @@ const CardBrowser = () => {
                       <div className="flex items-center justify-between text-xs sm:text-sm">
                         <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold uppercase tracking-wide">
                           Chương {card.chapter || '1'}
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openEditModal(card, 'chapter'); }}
+                              className="ml-1 text-blue-600 hover:text-blue-800"
+                              title="Sửa chương"
+                            >
+                              ✎
+                            </button>
+                          )}
                         </span>
                         <div className="flex items-center gap-3 text-slate-400 font-semibold">
                           <span>Câu hỏi #{idx + 1}</span>
@@ -999,9 +1068,18 @@ const CardBrowser = () => {
                           #{card.id}
                         </span>
 
-                        <h2 className="text-sm font-semibold text-gray-500 mb-2 mt-4 max-h-10 overflow-hidden line-clamp-2">
-                          {card.title || 'Câu hỏi'}
-                        </h2>
+                        <div className="flex items-start gap-2 text-sm font-semibold text-gray-500 mb-2 mt-4 max-h-10 overflow-hidden">
+                          <span className="line-clamp-2">{card.title || 'Câu hỏi'}</span>
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openEditModal(card, 'title'); }}
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Sửa tiêu đề"
+                            >
+                              ✎
+                            </button>
+                          )}
+                        </div>
 
                         <h3 className="text-xl md:text-2xl font-bold text-gray-800 leading-snug flex-1 flex items-center">
                           {card.front}
@@ -1080,20 +1158,21 @@ const CardBrowser = () => {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold text-gray-900">✎ Chỉnh sửa thẻ</h3>
-              <button onClick={() => setIsEditOpen(false)} className="text-gray-500 hover:text-gray-700 text-xl">×</button>
+              <button onClick={closeEditModal} className="text-gray-500 hover:text-gray-700 text-xl">×</button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700">Tiêu đề (optional)</label>
-                <input
-                  type="text"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập tiêu đề"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Tiêu đề (optional)</label>
+                  <input
+                    type="text"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Nhập tiêu đề"
+                    autoFocus={editFocus === 'title'}
+                  />
+                </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700">Chương</label>
                 <input
@@ -1101,7 +1180,8 @@ const CardBrowser = () => {
                   value={editForm.chapter}
                   onChange={(e) => setEditForm(prev => ({ ...prev, chapter: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="VD: Chương 1"
+                    placeholder="VD: Chương 1"
+                    autoFocus={editFocus === 'chapter'}
                 />
               </div>
               <div className="space-y-2">
@@ -1202,7 +1282,7 @@ const CardBrowser = () => {
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setIsEditOpen(false)}
+                onClick={closeEditModal}
                 className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300"
               >
                 Hủy
@@ -1265,6 +1345,55 @@ const CardBrowser = () => {
                 className={`px-5 py-2 rounded-lg text-white font-medium ${loading || !bulkHtml.trim() ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
               >
                 {loading ? 'Đang xử lý...' : 'Thêm hàng loạt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isBulkChapterOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">✏️ Đổi chương hàng loạt</h3>
+              <button
+                onClick={() => { setIsBulkChapterOpen(false); setBulkChapter(''); }}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600">
+              Áp dụng cho {selectedCards.size} thẻ đã chọn. Để trống để xóa chương.
+            </p>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Tên chương mới</label>
+              <input
+                type="text"
+                value={bulkChapter}
+                onChange={(e) => setBulkChapter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="VD: Chương 2 - Mạng"
+              />
+              <div className="text-xs text-gray-500">Để trống nếu muốn xóa giá trị chương.</div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => { setIsBulkChapterOpen(false); setBulkChapter(''); }}
+                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300"
+                disabled={bulkUpdating}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleBulkChapterUpdate}
+                className={`px-5 py-2 rounded-lg text-white font-semibold ${bulkUpdating ? 'bg-gray-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                disabled={bulkUpdating}
+              >
+                {bulkUpdating ? 'Đang cập nhật...' : 'Cập nhật chương'}
               </button>
             </div>
           </div>

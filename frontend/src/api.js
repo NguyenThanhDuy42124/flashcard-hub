@@ -122,4 +122,10 @@ export const studyAPI = {
     API.get('/users/progress'),
 };
 
+// ============== EXAM ENDPOINTS ==============
+
+export const examsAPI = {
+  createExam: (payload) => API.post('/exams/create', payload),
+};
+
 export default API;
