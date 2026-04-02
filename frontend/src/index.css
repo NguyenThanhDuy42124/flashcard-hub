@@ -220,6 +220,17 @@ body.dark-mode .explanation-text {
   color: #dbeafe !important;
 }
 
+body.dark-mode .option-card {
+  background-color: #1b1c1f !important;
+  border-color: #5f6368 !important;
+}
+
+body.dark-mode .option-key-badge {
+  background-color: #d2e3fc !important;
+  color: #131314 !important;
+  border: 1px solid #9aa0a6 !important;
+}
+
 body.dark-mode .shadow,
 body.dark-mode .shadow-sm,
 body.dark-mode .shadow-md,

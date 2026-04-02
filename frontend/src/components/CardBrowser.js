@@ -783,7 +783,7 @@ const CardBrowser = () => {
 
                 const optionIcon = (key) => {
                   if (!quizMeta || !isAnswered) return (
-                    <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-slate-100 text-slate-500 rounded-lg text-sm font-bold">
+                    <span className="option-key-badge flex-shrink-0 w-7 h-7 flex items-center justify-center bg-slate-100 text-slate-500 rounded-lg text-sm font-bold">
                       {key}
                     </span>
                   );
@@ -798,7 +798,7 @@ const CardBrowser = () => {
                     </span>
                   );
                   return (
-                    <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-slate-200 text-slate-400 rounded-lg text-sm font-bold">{key}</span>
+                    <span className="option-key-badge flex-shrink-0 w-7 h-7 flex items-center justify-center bg-slate-200 text-slate-400 rounded-lg text-sm font-bold">{key}</span>
                   );
                 };
 
@@ -960,7 +960,7 @@ const CardBrowser = () => {
                           <button
                             key={key}
                             onClick={() => handleQuizSelect(card.id, key)}
-                            className={optionClass(key)}
+                            className={`${optionClass(key)} option-card`}
                             disabled={isAnswered}
                           >
                             {optionIcon(key)}
