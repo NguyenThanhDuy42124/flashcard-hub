@@ -8,6 +8,7 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 from typing import List, Optional
 from pathlib import Path
+import asyncio
 import os
 import sys
 import logging
@@ -65,6 +66,8 @@ TIME_LIMIT_OPTIONS = {
     "unlimited": None,
 }
 
+EXAM_EXPIRATION_SWEEP_SECONDS = 15 * 60
+
 # Initialize database schema
 try:
     from alembic.config import Config
@@ -100,6 +103,19 @@ try:
                 logger.warning("⚠️ Adding missing 'allow_card_additions' column to decks table")
                 with engine.connect() as conn:
                     conn.execute(text("ALTER TABLE decks ADD COLUMN allow_card_additions BOOLEAN DEFAULT 1"))
+                    conn.commit()
+
+            if 'expired_at' not in deck_columns:
+                logger.warning("⚠️ Adding missing 'expired_at' column to decks table")
+                with engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE decks ADD COLUMN expired_at DATETIME"))
+                    conn.commit()
+
+            if 'status' not in deck_columns:
+                logger.warning("⚠️ Adding missing 'status' column to decks table")
+                with engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE decks ADD COLUMN status VARCHAR(20) DEFAULT 'active'"))
+                    conn.execute(text("UPDATE decks SET status = 'active' WHERE status IS NULL"))
                     conn.commit()
             
             logger.info("✅ Card columns verified")
@@ -364,6 +380,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
+@app.on_event("startup")
+async def start_exam_expiration_job():
+    """Start periodic background task for exam expiration cleanup."""
+    asyncio.create_task(exam_expiration_sweeper())
+    logger.info("⏱️ Exam expiration sweeper started (every 15 minutes)")
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -447,6 +470,69 @@ def select_cards_for_deck(cards: List[Card], count: int, scope: str = "deck") ->
     return result[:count]
 
 
+def is_deck_expired(deck: Deck, now: Optional[datetime] = None) -> bool:
+    """Check whether a deck has passed expiration time."""
+    if not deck.expired_at:
+        return False
+    now_time = now or datetime.utcnow()
+    return deck.expired_at <= now_time
+
+
+def mark_deck_expired_if_needed(db: Session, deck: Deck, now: Optional[datetime] = None) -> bool:
+    """Soft-expire a deck if needed. Returns True if updated."""
+    if deck.status == "expired":
+        return False
+    if is_deck_expired(deck, now=now):
+        deck.status = "expired"
+        return True
+    return False
+
+
+def expire_due_exams(db: Session, now: Optional[datetime] = None) -> int:
+    """Soft-expire all due exam decks and return affected count."""
+    now_time = now or datetime.utcnow()
+    due_decks = db.query(Deck).filter(
+        Deck.expired_at.isnot(None),
+        Deck.expired_at <= now_time,
+        (Deck.status.is_(None)) | (Deck.status != "expired")
+    ).all()
+
+    for deck in due_decks:
+        deck.status = "expired"
+
+    if due_decks:
+        db.commit()
+
+    return len(due_decks)
+
+
+async def exam_expiration_sweeper():
+    """Periodic job to expire exams every 15 minutes."""
+    while True:
+        await asyncio.sleep(EXAM_EXPIRATION_SWEEP_SECONDS)
+        db = SessionLocal()
+        try:
+            changed = expire_due_exams(db)
+            if changed > 0:
+                logger.info(f"🧹 Expiration sweep marked {changed} deck(s) as expired")
+
+            if os.getenv("DELETE_EXPIRED_EXAMS", "false").lower() == "true":
+                now_time = datetime.utcnow()
+                hard_deleted = db.query(Deck).filter(
+                    Deck.expired_at.isnot(None),
+                    Deck.expired_at <= now_time,
+                    Deck.status == "expired"
+                ).delete(synchronize_session=False)
+                if hard_deleted > 0:
+                    db.commit()
+                    logger.info(f"🗑️ Hard deleted {hard_deleted} expired deck(s)")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"❌ Expiration sweep failed: {e}")
+        finally:
+            db.close()
+
+
 # ============== DECK ENDPOINTS ==============
 
 @app.get("/api/decks", response_model=List[DeckResponse])
@@ -454,16 +540,26 @@ async def list_decks(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    tag: str = Query(None)
+    tag: str = Query(None),
+    status: Optional[str] = Query(None)
 ):
     """List all public decks with pagination and filtering."""
     try:
         logger.info(f"📋 Fetching decks: skip={skip}, limit={limit}, tag={tag}")
         
+        expire_due_exams(db)
+
         query = db.query(Deck).filter(Deck.is_public == True)
 
         if tag:
             query = query.filter(Deck.tag == tag)
+
+        if status == "expired":
+            query = query.filter(Deck.status == "expired")
+        elif status == "active":
+            query = query.filter((Deck.status.is_(None)) | (Deck.status == "active"))
+        elif status is None:
+            query = query.filter((Deck.status.is_(None)) | (Deck.status != "expired"))
 
         decks = query.offset(skip).limit(limit).all()
         logger.info(f"✅ Found {len(decks)} public decks")
@@ -626,6 +722,13 @@ async def get_deck(deck_id: int, db: Session = Depends(get_db)):
             logger.info(f"   Available decks in database: {all_decks}")
             raise HTTPException(status_code=404, detail=f"Deck {deck_id} not found")
 
+        if mark_deck_expired_if_needed(db, deck):
+            db.commit()
+            db.refresh(deck)
+
+        if deck.status == "expired":
+            raise HTTPException(status_code=410, detail="Đề đã hết hạn")
+
         logger.info(f"✅ Deck found: {deck.title} (ID: {deck_id}, Cards: {len(deck.cards)})")
         return deck
     except HTTPException:
@@ -684,6 +787,13 @@ async def get_deck_cards(
             all_decks = db.query(Deck).count()
             logger.info(f"   Available decks in database: {all_decks}")
             raise HTTPException(status_code=404, detail=f"Deck {deck_id} not found")
+
+        if mark_deck_expired_if_needed(db, deck):
+            db.commit()
+            db.refresh(deck)
+
+        if deck.status == "expired":
+            raise HTTPException(status_code=410, detail="Đề đã hết hạn")
 
         query = db.query(Card).filter(Card.deck_id == deck_id)
         
@@ -905,7 +1015,9 @@ async def create_exam_deck(
         owner_id=user_id,
         tag=target_tag,
         is_public=True,
-        allow_card_additions=False
+        allow_card_additions=False,
+        expired_at=expires_at,
+        status="active"
     )
     db.add(exam_deck)
     db.flush()
@@ -929,6 +1041,7 @@ async def create_exam_deck(
         deck_title=exam_deck.title,
         total_questions=len(selected_cards),
         expires_at=expires_at,
+        status=exam_deck.status,
         tag=target_tag,
     )
 

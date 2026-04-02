@@ -66,6 +66,8 @@ class DeckResponse(DeckBase):
     owner_id: int
     created_at: datetime
     updated_at: datetime
+    expired_at: Optional[datetime] = None
+    status: str = "active"
     cards: List[CardResponse] = []
 
     class Config:
@@ -151,4 +153,5 @@ class ExamCreateResponse(BaseModel):
     deck_title: str
     total_questions: int
     expires_at: Optional[datetime] = None
+    status: str = "active"
     tag: str = "Quiz"

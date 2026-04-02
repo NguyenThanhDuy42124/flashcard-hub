@@ -28,6 +28,7 @@ const CardBrowser = () => {
   const [selectedCards, setSelectedCards] = useState(new Set());
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
   const [newTag, setNewTag] = useState('');
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [bulkHtml, setBulkHtml] = useState('');
@@ -84,12 +85,13 @@ const CardBrowser = () => {
         const deckResponse = await decksAPI.getDeck(deckId);
         setDeck(deckResponse.data);
         setNewTag(deckResponse.data.tag || '');
+        setNewDescription(deckResponse.data.description || '');
 
         await reloadCards();
         setError(null);
       } catch (err) {
         console.error('Failed to fetch deck:', err);
-        setError('Không thể tải deck. Vui lòng thử lại.');
+        setError(err.response?.data?.detail || 'Không thể tải deck. Vui lòng thử lại.');
       } finally {
         setLoading(false);
       }
@@ -250,8 +252,18 @@ const CardBrowser = () => {
 
   const handleUpdateTitle = async () => {
     try {
-      await decksAPI.updateDeck(deckId, { ...deck, title: newTitle || deck.title, tag: newTag || null });
-      setDeck(prev => ({ ...prev, title: newTitle || deck.title, tag: newTag || null }));
+      await decksAPI.updateDeck(deckId, {
+        ...deck,
+        title: newTitle || deck.title,
+        description: newDescription?.trim() || null,
+        tag: newTag || null,
+      });
+      setDeck(prev => ({
+        ...prev,
+        title: newTitle || deck.title,
+        description: newDescription?.trim() || null,
+        tag: newTag || null,
+      }));
       setIsEditingTitle(false);
     } catch (err) {
       alert('Lỗi khi cập nhật tên deck');
@@ -560,16 +572,26 @@ const CardBrowser = () => {
             </div>
 
             {isEditingTitle && isAdmin ? (
-              <div className="flex justify-center items-center gap-2 mb-2 sm:mb-4">
+              <div className="flex flex-col items-center gap-3 mb-2 sm:mb-4 w-full max-w-2xl mx-auto">
                 <input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="text-2xl sm:text-3xl font-bold text-gray-900 border-b-2 border-blue-500 focus:outline-none text-center px-2 py-1 max-w-lg w-full"
+                  className="text-2xl sm:text-3xl font-bold text-gray-900 border-b-2 border-blue-500 focus:outline-none text-center px-2 py-1 w-full"
                   autoFocus
+                  placeholder="Tên deck"
                 />
-                <button onClick={handleUpdateTitle} className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600">✓</button>
-                <button onClick={() => setIsEditingTitle(false)} className="p-2 bg-gray-400 text-white rounded-full hover:bg-gray-500">✕</button>
+                <input
+                  type="text"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="text-sm sm:text-base text-gray-700 border-b border-gray-300 focus:outline-none focus:border-blue-500 text-center px-2 py-1 w-full"
+                  placeholder="Mô tả ngắn dưới tên deck"
+                />
+                <div className="flex items-center gap-2">
+                  <button onClick={handleUpdateTitle} className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600">✓</button>
+                  <button onClick={() => setIsEditingTitle(false)} className="p-2 bg-gray-400 text-white rounded-full hover:bg-gray-500">✕</button>
+                </div>
               </div>
             ) : (
               <div className="flex justify-center items-center gap-2">
@@ -577,7 +599,7 @@ const CardBrowser = () => {
                   {deck.title}
                 </h1>
                 {isAdmin && (
-                  <button onClick={() => { setNewTitle(deck.title); setIsEditingTitle(true); }} className="text-gray-400 hover:text-blue-500 self-start mt-2">
+                  <button onClick={() => { setNewTitle(deck.title); setNewDescription(deck.description || ''); setIsEditingTitle(true); }} className="text-gray-400 hover:text-blue-500 self-start mt-2">
                     ✎
                   </button>
                 )}

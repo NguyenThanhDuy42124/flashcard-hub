@@ -25,8 +25,8 @@ API.interceptors.response.use(
 
 export const decksAPI = {
   // List all decks
-  listDecks: (skip = 0, limit = 10, tag = null) =>
-    API.get('/decks', { params: { skip, limit, tag } }),
+  listDecks: (skip = 0, limit = 10, tag = null, status = null) =>
+    API.get('/decks', { params: { skip, limit, tag, status } }),
 
   // Get specific deck
   getDeck: (deckId) =>

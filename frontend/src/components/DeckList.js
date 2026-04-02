@@ -8,6 +8,7 @@ const DeckList = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState('active');
   const [tags, setTags] = useState([]);
   const [isQuickOpen, setIsQuickOpen] = useState(false);
   const [quickName, setQuickName] = useState('');
@@ -21,7 +22,7 @@ const DeckList = () => {
   const fetchDecks = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await decksAPI.listDecks(0, 50, selectedTag);
+      const response = await decksAPI.listDecks(0, 50, selectedTag, selectedStatus);
       setDecks(response.data);
       
       // Extract unique tags
@@ -33,7 +34,7 @@ const DeckList = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedTag]);
+  }, [selectedTag, selectedStatus]);
 
   useEffect(() => {
     fetchDecks();
@@ -104,6 +105,14 @@ const DeckList = () => {
           >
             Tất Cả
           </button>
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+          >
+            <option value="active">Đề còn hạn</option>
+            <option value="expired">Đề đã hết hạn</option>
+          </select>
           <button
             onClick={() => navigate('/exam/create')}
             className="px-4 py-2 rounded-lg font-medium bg-indigo-600 text-white hover:bg-indigo-700"
@@ -160,17 +169,31 @@ const DeckList = () => {
                   <span className="text-sm font-medium text-blue-600">
                     {deck.cards.length} thẻ
                   </span>
-                  <span className={`text-xs px-2 py-1 rounded ${deck.tag === 'Quiz' ? 'bg-purple-100 text-purple-700' : deck.tag === 'Flashcard' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {deck.tag || 'None'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-1 rounded ${deck.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      {deck.status === 'expired' ? 'Expired' : 'Active'}
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded ${deck.tag === 'Quiz' ? 'bg-purple-100 text-purple-700' : deck.tag === 'Flashcard' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {deck.tag || 'None'}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex gap-2">
-                  <a
-                    href={`/deck/${deck.id}/cards`}
-                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-center font-medium hover:bg-blue-700 transition"
-                  >
-                    📖 Ôn Tập
-                  </a>
+                  {deck.status === 'expired' ? (
+                    <button
+                      disabled
+                      className="flex-1 bg-gray-300 text-gray-600 py-2 rounded-lg text-center font-medium cursor-not-allowed"
+                    >
+                      ⏰ Đã hết hạn
+                    </button>
+                  ) : (
+                    <a
+                      href={`/deck/${deck.id}/cards`}
+                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-center font-medium hover:bg-blue-700 transition"
+                    >
+                      📖 Ôn Tập
+                    </a>
+                  )}
                   {isAdmin && (
                   <button
                     onClick={() => handleDelete(deck.id)}

@@ -33,6 +33,8 @@ class Deck(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_public = Column(Boolean, default=True)
     allow_card_additions = Column(Boolean, default=True)
+    expired_at = Column(DateTime, nullable=True, index=True)
+    status = Column(String(20), nullable=False, default="active", index=True)
     tag = Column(String(255), nullable=True)  # For categorization
 
     # Relationships
