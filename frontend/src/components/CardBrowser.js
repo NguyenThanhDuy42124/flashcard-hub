@@ -19,7 +19,7 @@ const CardBrowser = () => {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedChapter, setSelectedChapter] = useState('Tất cả');
+  const [selectedChapters, setSelectedChapters] = useState(['Tất cả']);
   const [chapters, setChapters] = useState([]);
   const [flippedCards, setFlippedCards] = useState({});
   const [sortBy, setSortBy] = useState('position');
@@ -101,12 +101,30 @@ const CardBrowser = () => {
   }, [deckId, sortBy, reloadCards]);
 
   const filteredCards = cards.filter(card => {
-    const chapterMatch = selectedChapter === 'Tất cả' || (card.chapter || 'General') === selectedChapter;
+    const chapterMatch = selectedChapters.includes('Tất cả') || selectedChapters.includes(card.chapter || 'General');
     const searchMatch = !searchTerm ||
       (card.front && card.front.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (card.title && card.title.toLowerCase().includes(searchTerm.toLowerCase()));
     return chapterMatch && searchMatch;
   });
+
+  const toggleChapterFilter = (chapter) => {
+    setSelectedChapters((prev) => {
+      if (chapter === 'Tất cả') {
+        return ['Tất cả'];
+      }
+
+      const withoutAll = prev.filter((c) => c !== 'Tất cả');
+      const exists = withoutAll.includes(chapter);
+
+      if (exists) {
+        const next = withoutAll.filter((c) => c !== chapter);
+        return next.length ? next : ['Tất cả'];
+      }
+
+      return [...withoutAll, chapter];
+    });
+  };
 
   const filteredIds = filteredCards.map(c => c.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every(id => selectedCards.has(id));
@@ -726,9 +744,9 @@ const CardBrowser = () => {
               {chapters.map(chapter => (
                 <button
                   key={chapter}
-                  onClick={() => setSelectedChapter(chapter)}
+                  onClick={() => toggleChapterFilter(chapter)}
                   className={`px-2 sm:px-4 py-1 sm:py-2 rounded-full font-medium transition text-xs sm:text-sm ${
-                    selectedChapter === chapter
+                    selectedChapters.includes(chapter)
                       ? 'bg-gray-800 text-white shadow-md'
                       : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                   }`}
