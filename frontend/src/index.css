@@ -92,3 +92,76 @@ body {
 .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 8px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.4); border-radius: 8px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.6); }
+
+/* Dark mode (global override for existing Tailwind utility classes) */
+body.dark-mode {
+  background-color: #0b1220;
+  color: #e5e7eb;
+}
+
+body.dark-mode .bg-white {
+  background-color: #111827 !important;
+}
+
+body.dark-mode .bg-gray-50,
+body.dark-mode .bg-blue-50,
+body.dark-mode .bg-indigo-50,
+body.dark-mode .bg-yellow-50,
+body.dark-mode .bg-red-50,
+body.dark-mode .bg-green-50,
+body.dark-mode .bg-amber-50,
+body.dark-mode .bg-slate-50 {
+  background-color: #1f2937 !important;
+}
+
+body.dark-mode .text-gray-900,
+body.dark-mode .text-gray-800,
+body.dark-mode .text-slate-900,
+body.dark-mode .text-neutral-900 {
+  color: #f3f4f6 !important;
+}
+
+body.dark-mode .text-gray-700,
+body.dark-mode .text-gray-600,
+body.dark-mode .text-gray-500,
+body.dark-mode .text-slate-700,
+body.dark-mode .text-slate-600,
+body.dark-mode .text-slate-500,
+body.dark-mode .text-neutral-800 {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .border-gray-100,
+body.dark-mode .border-gray-200,
+body.dark-mode .border-gray-300,
+body.dark-mode .border-slate-100,
+body.dark-mode .border-slate-200,
+body.dark-mode .border-blue-200,
+body.dark-mode .border-indigo-200,
+body.dark-mode .border-yellow-200,
+body.dark-mode .border-red-200,
+body.dark-mode .border-green-200,
+body.dark-mode .border-amber-100 {
+  border-color: #374151 !important;
+}
+
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+  background-color: #0f172a !important;
+  color: #e5e7eb !important;
+  border-color: #475569 !important;
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .shadow,
+body.dark-mode .shadow-sm,
+body.dark-mode .shadow-md,
+body.dark-mode .shadow-lg,
+body.dark-mode .shadow-xl {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
+}

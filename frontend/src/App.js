@@ -13,16 +13,31 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(
     typeof window !== 'undefined' && localStorage.getItem('flashcardAdmin') === 'true'
   );
+  const [isDarkMode, setIsDarkMode] = useState(
+    typeof window !== 'undefined' && localStorage.getItem('flashcardTheme') === 'dark'
+  );
 
   useEffect(() => {
     // Fetch user progress on app load
     fetchUserProgress();
     const handleStorage = () => {
       setIsAdmin(localStorage.getItem('flashcardAdmin') === 'true');
+      setIsDarkMode(localStorage.getItem('flashcardTheme') === 'dark');
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isDarkMode) {
+      document.body.classList.add('dark-mode');
+      localStorage.setItem('flashcardTheme', 'dark');
+    } else {
+      document.body.classList.remove('dark-mode');
+      localStorage.setItem('flashcardTheme', 'light');
+    }
+  }, [isDarkMode]);
 
   const handleLogout = () => {
     localStorage.removeItem('flashcardAdmin');
@@ -61,6 +76,13 @@ function App() {
                 <Link to="/upload" className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base">
                   Tải Lên
                 </Link>
+                <button
+                  onClick={() => setIsDarkMode((prev) => !prev)}
+                  className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base border border-gray-200 px-2 py-1 rounded"
+                  title="Bật/tắt Dark Mode"
+                >
+                  {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+                </button>
                 {userProgress && (
                   <div className="text-xs sm:text-sm text-gray-600 bg-blue-100 px-2 sm:px-3 py-1 rounded whitespace-nowrap">
                     Đã ôn: {userProgress.total_cards_reviewed}
