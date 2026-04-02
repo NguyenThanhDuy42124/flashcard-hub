@@ -117,6 +117,7 @@ body.dark-mode .bg-slate-50 {
 body.dark-mode .text-gray-900,
 body.dark-mode .text-gray-800,
 body.dark-mode .text-slate-900,
+body.dark-mode .text-slate-800,
 body.dark-mode .text-neutral-900 {
   color: #f3f4f6 !important;
 }
@@ -124,11 +125,28 @@ body.dark-mode .text-neutral-900 {
 body.dark-mode .text-gray-700,
 body.dark-mode .text-gray-600,
 body.dark-mode .text-gray-500,
+body.dark-mode .text-slate-400,
 body.dark-mode .text-slate-700,
 body.dark-mode .text-slate-600,
 body.dark-mode .text-slate-500,
 body.dark-mode .text-neutral-800 {
   color: #cbd5e1 !important;
+}
+
+body.dark-mode .text-blue-600,
+body.dark-mode .text-blue-700,
+body.dark-mode .text-indigo-700,
+body.dark-mode .text-purple-700,
+body.dark-mode .text-green-700,
+body.dark-mode .text-red-700,
+body.dark-mode .text-orange-700,
+body.dark-mode .text-amber-700 {
+  color: #93c5fd !important;
+}
+
+body.dark-mode .bg-gradient-to-br,
+body.dark-mode .bg-gradient-primary {
+  background: linear-gradient(135deg, #0b1220 0%, #111827 55%, #1e293b 100%) !important;
 }
 
 body.dark-mode .border-gray-100,
