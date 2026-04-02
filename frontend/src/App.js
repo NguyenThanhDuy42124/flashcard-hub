@@ -16,6 +16,7 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(
     typeof window !== 'undefined' && localStorage.getItem('flashcardTheme') === 'dark'
   );
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     // Fetch user progress on app load
@@ -39,6 +40,17 @@ function App() {
     }
   }, [isDarkMode]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 260);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('flashcardAdmin');
     setIsAdmin(false);
@@ -51,6 +63,10 @@ function App() {
     } catch (error) {
       console.error('Error fetching progress:', error);
     }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -119,6 +135,17 @@ function App() {
             <Route path="/exam/create" element={<ExamCreator />} />
           </Routes>
         </main>
+
+        {showScrollTop && (
+          <button
+            onClick={scrollToTop}
+            className="scroll-top-btn fixed right-5 bottom-6 z-50 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all"
+            title="Lên đầu trang"
+            aria-label="Lên đầu trang"
+          >
+            ↑
+          </button>
+        )}
       </div>
     </Router>
   );

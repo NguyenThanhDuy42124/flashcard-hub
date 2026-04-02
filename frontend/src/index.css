@@ -238,3 +238,13 @@ body.dark-mode .shadow-lg,
 body.dark-mode .shadow-xl {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 30px rgba(0, 0, 0, 0.35) !important;
 }
+
+body.dark-mode .scroll-top-btn {
+  background: #4285f4 !important;
+  color: #ffffff !important;
+  border: 1px solid #5f9bff !important;
+}
+
+body.dark-mode .scroll-top-btn:hover {
+  background: #3b78e7 !important;
+}
