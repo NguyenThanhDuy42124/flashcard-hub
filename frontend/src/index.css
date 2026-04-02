@@ -93,14 +93,25 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.4); border-radius: 8px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.6); }
 
-/* Dark mode (global override for existing Tailwind utility classes) */
+/* Dark mode based on Gemini palette */
 body.dark-mode {
-  background-color: #0b1220;
-  color: #e5e7eb;
+  --g-bg: #131314;
+  --g-surface-low: #1e1f20;
+  --g-surface-high: #282a2d;
+  --g-border: #444746;
+  --g-text-primary: #e3e3e3;
+  --g-text-secondary: #c4c7c5;
+  --g-action: #8ab4f8;
+  --g-success: #81c995;
+  --g-warning: #fdd663;
+  --g-error: #f28b82;
+  --g-gradient: linear-gradient(45deg, #4285f4, #9b72cb, #d96570);
+  background-color: var(--g-bg);
+  color: var(--g-text-primary);
 }
 
 body.dark-mode .bg-white {
-  background-color: #111827 !important;
+  background-color: var(--g-surface-low) !important;
 }
 
 body.dark-mode .bg-gray-50,
@@ -110,43 +121,56 @@ body.dark-mode .bg-yellow-50,
 body.dark-mode .bg-red-50,
 body.dark-mode .bg-green-50,
 body.dark-mode .bg-amber-50,
-body.dark-mode .bg-slate-50 {
-  background-color: #1f2937 !important;
+body.dark-mode .bg-slate-50,
+body.dark-mode .bg-gray-100 {
+  background-color: var(--g-surface-high) !important;
 }
 
 body.dark-mode .text-gray-900,
 body.dark-mode .text-gray-800,
 body.dark-mode .text-slate-900,
 body.dark-mode .text-slate-800,
-body.dark-mode .text-neutral-900 {
-  color: #f3f4f6 !important;
+body.dark-mode .text-neutral-900,
+body.dark-mode .text-white {
+  color: var(--g-text-primary) !important;
 }
 
 body.dark-mode .text-gray-700,
 body.dark-mode .text-gray-600,
 body.dark-mode .text-gray-500,
-body.dark-mode .text-slate-400,
 body.dark-mode .text-slate-700,
 body.dark-mode .text-slate-600,
 body.dark-mode .text-slate-500,
+body.dark-mode .text-slate-400,
 body.dark-mode .text-neutral-800 {
-  color: #cbd5e1 !important;
+  color: var(--g-text-secondary) !important;
 }
 
 body.dark-mode .text-blue-600,
 body.dark-mode .text-blue-700,
 body.dark-mode .text-indigo-700,
-body.dark-mode .text-purple-700,
+body.dark-mode .text-purple-700 {
+  color: var(--g-action) !important;
+}
+
 body.dark-mode .text-green-700,
+body.dark-mode .text-emerald-700 {
+  color: var(--g-success) !important;
+}
+
 body.dark-mode .text-red-700,
+body.dark-mode .text-rose-700 {
+  color: var(--g-error) !important;
+}
+
 body.dark-mode .text-orange-700,
 body.dark-mode .text-amber-700 {
-  color: #93c5fd !important;
+  color: var(--g-warning) !important;
 }
 
 body.dark-mode .bg-gradient-to-br,
 body.dark-mode .bg-gradient-primary {
-  background: linear-gradient(135deg, #0b1220 0%, #111827 55%, #1e293b 100%) !important;
+  background: radial-gradient(circle at top left, #1b1c1f, #131314 60%) !important;
 }
 
 body.dark-mode .border-gray-100,
@@ -160,20 +184,29 @@ body.dark-mode .border-yellow-200,
 body.dark-mode .border-red-200,
 body.dark-mode .border-green-200,
 body.dark-mode .border-amber-100 {
-  border-color: #374151 !important;
+  border-color: var(--g-border) !important;
 }
 
 body.dark-mode input,
 body.dark-mode textarea,
 body.dark-mode select {
-  background-color: #0f172a !important;
-  color: #e5e7eb !important;
-  border-color: #475569 !important;
+  background-color: #202124 !important;
+  color: var(--g-text-primary) !important;
+  border-color: var(--g-border) !important;
 }
 
 body.dark-mode input::placeholder,
 body.dark-mode textarea::placeholder {
-  color: #94a3b8 !important;
+  color: #9aa0a6 !important;
+}
+
+body.dark-mode .bg-blue-600,
+body.dark-mode .hover\:bg-blue-700:hover,
+body.dark-mode .bg-indigo-600,
+body.dark-mode .hover\:bg-indigo-700:hover {
+  background: var(--g-gradient) !important;
+  color: #ffffff !important;
+  border: 0 !important;
 }
 
 body.dark-mode .shadow,
@@ -181,5 +214,5 @@ body.dark-mode .shadow-sm,
 body.dark-mode .shadow-md,
 body.dark-mode .shadow-lg,
 body.dark-mode .shadow-xl {
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 30px rgba(0, 0, 0, 0.35) !important;
 }
