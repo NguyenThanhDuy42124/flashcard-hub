@@ -135,15 +135,15 @@ body.dark-mode .text-white {
   color: var(--g-text-primary) !important;
 }
 
-body.dark-mode .text-gray-700,
-body.dark-mode .text-gray-600,
 body.dark-mode .text-gray-500,
-body.dark-mode .text-slate-700,
-body.dark-mode .text-slate-600,
-body.dark-mode .text-slate-500,
+body.dark-mode .text-gray-600,
+body.dark-mode .text-gray-700,
+body.dark-mode .text-neutral-800,
 body.dark-mode .text-slate-400,
-body.dark-mode .text-neutral-800 {
-  color: var(--g-text-secondary) !important;
+body.dark-mode .text-slate-500,
+body.dark-mode .text-slate-600,
+body.dark-mode .text-slate-700 {
+  color: inherit;
 }
 
 body.dark-mode .text-blue-600,
@@ -207,6 +207,17 @@ body.dark-mode .hover\:bg-indigo-700:hover {
   background: var(--g-gradient) !important;
   color: #ffffff !important;
   border: 0 !important;
+}
+
+body.dark-mode .chapter-badge {
+  border: none !important;
+  box-shadow: none !important;
+  background: rgba(138, 180, 248, 0.14) !important;
+  color: var(--g-action) !important;
+}
+
+body.dark-mode .explanation-text {
+  color: #dbeafe !important;
 }
 
 body.dark-mode .shadow,

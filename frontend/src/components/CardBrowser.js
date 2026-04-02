@@ -826,7 +826,7 @@ const CardBrowser = () => {
                           style={{ backfaceVisibility: 'hidden' }}
                         >
                           {card.chapter && (
-                            <div className="absolute top-4 left-4 bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                            <div className="chapter-badge absolute top-4 left-4 bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
                               <span>{card.chapter}</span>
                               {isAdmin && (
                                 <button
@@ -926,7 +926,7 @@ const CardBrowser = () => {
                   <div key={card.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
                     <div className="p-5 sm:p-6 space-y-4">
                       <div className="flex items-center justify-between text-xs sm:text-sm">
-                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold uppercase tracking-wide">
+                        <span className="chapter-badge inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold uppercase tracking-wide">
                           Chương {card.chapter || '1'}
                           {isAdmin && (
                             <button
@@ -975,7 +975,7 @@ const CardBrowser = () => {
                             <span role="img" aria-label="info">💡</span>
                             Giải thích
                           </div>
-                          <p className="mt-2 leading-relaxed text-sm sm:text-base">{quizMeta.explanation}</p>
+                          <p className="explanation-text mt-2 leading-relaxed text-sm sm:text-base">{quizMeta.explanation}</p>
                         </div>
                       )}
 
