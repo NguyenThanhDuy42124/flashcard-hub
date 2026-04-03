@@ -329,7 +329,7 @@ body.dark-mode {
   --g-surface-high: #1d1f1c;
   --g-border: #474138;
   --g-text-primary: #e4ddcf;
-  --g-text-secondary: #b9ae9b;
+  --g-text-secondary: #c6bcab;
   --g-action: #d78961;
   --g-success: #88c79d;
   --g-warning: #f1c777;
@@ -409,7 +409,7 @@ body.dark-mode .text-slate-400,
 body.dark-mode .text-slate-500,
 body.dark-mode .text-slate-600,
 body.dark-mode .text-slate-700 {
-  color: inherit;
+  color: var(--g-text-secondary) !important;
 }
 
 body.dark-mode .text-blue-600,

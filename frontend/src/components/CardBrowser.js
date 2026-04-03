@@ -875,7 +875,7 @@ const CardBrowser = () => {
                             </div>
                           )}
                           <span className="absolute top-4 right-4 text-gray-300 font-mono">#{card.id}</span>
-                          <h2 className="text-base md:text-lg font-semibold text-blue-700 mb-2 mt-6 max-h-14 overflow-hidden line-clamp-2 leading-snug">
+                          <h2 className="text-base md:text-lg font-semibold text-blue-700 mb-2 mt-8 md:mt-9 max-h-14 overflow-hidden line-clamp-2 leading-snug">
                             {card.title || 'Câu hỏi'}
                           </h2>
                           <h3 className="text-xl md:text-2xl font-bold text-gray-800 leading-snug flex-1 flex items-center">{card.front}</h3>
@@ -1108,7 +1108,7 @@ const CardBrowser = () => {
                           #{card.id}
                         </span>
 
-                        <div className="flex items-start gap-2 text-sm font-semibold text-gray-500 mb-2 mt-4 max-h-10 overflow-hidden">
+                        <div className="flex items-start gap-2 text-sm font-semibold text-gray-500 mb-2 mt-7 md:mt-8 max-h-10 overflow-hidden">
                           <span className="line-clamp-2">{card.title || 'Câu hỏi'}</span>
                           {isAdmin && (
                             <button
