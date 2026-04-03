@@ -71,36 +71,35 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+      <div className="app-shell flex min-h-screen flex-col">
         {/* Navigation Bar */}
-        <nav className="bg-white shadow-lg">
+        <nav className="app-nav">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap justify-between items-center py-4 gap-4">
-              <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <span className="text-xl sm:text-2xl">🎓</span>
-                <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Flashcard Hub
-                </span>
+              <Link to="/" className="brand-wordmark hover:opacity-85 transition-opacity">
+                <span className="text-xl sm:text-2xl">✦</span>
+                <span className="title text-xl sm:text-2xl font-bold">Flashcard Hub</span>
+                <span className="dot text-xl sm:text-2xl">.</span>
               </Link>
               <div className="flex flex-wrap gap-4 sm:gap-6 items-center">
-                <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base">
+                <Link to="/" className="text-gray-700 hover:text-blue-600 font-semibold text-sm sm:text-base">
                   Bộ Deck
                 </Link>
-                <Link to="/create" className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base">
+                <Link to="/create" className="text-gray-700 hover:text-blue-600 font-semibold text-sm sm:text-base">
                   Tạo Deck
                 </Link>
-                <Link to="/upload" className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base">
+                <Link to="/upload" className="text-gray-700 hover:text-blue-600 font-semibold text-sm sm:text-base">
                   Tải Lên
                 </Link>
                 <button
                   onClick={() => setIsDarkMode((prev) => !prev)}
-                  className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base border border-gray-200 px-2 py-1 rounded"
+                  className="theme-toggle-btn text-sm sm:text-base font-semibold px-3 py-1.5"
                   title="Bật/tắt Dark Mode"
                 >
                   {isDarkMode ? '☀️ Light' : '🌙 Dark'}
                 </button>
                 {userProgress && (
-                  <div className="text-xs sm:text-sm text-gray-600 bg-blue-100 px-2 sm:px-3 py-1 rounded whitespace-nowrap">
+                  <div className="text-xs sm:text-sm text-gray-700 bg-blue-100 px-2 sm:px-3 py-1.5 rounded-full whitespace-nowrap font-semibold">
                     Đã ôn: {userProgress.total_cards_reviewed}
                   </div>
                 )}
@@ -109,13 +108,13 @@ function App() {
                     <span className="text-green-700 font-semibold">Hello, Admin</span>
                     <button
                       onClick={handleLogout}
-                      className="text-red-600 hover:text-red-700 font-medium border border-red-200 px-2 py-1 rounded"
+                      className="text-red-600 hover:text-red-700 font-semibold border border-red-200 px-2.5 py-1 rounded-full"
                     >
                       Logout
                     </button>
                   </div>
                 ) : (
-                  <Link to="/login" className="text-gray-700 hover:text-blue-600 font-medium text-sm sm:text-base">
+                  <Link to="/login" className="text-gray-700 hover:text-blue-600 font-semibold text-sm sm:text-base">
                     Admin Login
                   </Link>
                 )}

@@ -83,23 +83,28 @@ const DeckList = () => {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">📚 Bộ Flashcard</h1>
-        <p className="text-gray-600">Duyệt và ôn tập các bộ flashcard tương tác</p>
+        <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-4 py-1.5 mb-4 text-sm font-semibold text-gray-700">
+          <span>Kho học liệu</span>
+          <span>•</span>
+          <span>{decks.length} deck</span>
+        </div>
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 tracking-tight">📚 Bộ Flashcard</h1>
+        <p className="text-gray-600 text-base md:text-lg">Duyệt và ôn tập theo một giao diện thống nhất, dễ nhìn và tập trung.</p>
       </div>
 
       {/* Search & Filter */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white rounded-2xl p-6 mb-8">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4 mb-4">
           <input
             type="text"
             placeholder="Tìm kiếm bộ deck..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={() => setSelectedTag(null)}
-            className={`px-4 py-2 rounded-lg font-medium ${
+            className={`px-4 py-2.5 rounded-xl font-semibold ${
               !selectedTag ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
             }`}
           >
@@ -108,20 +113,20 @@ const DeckList = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+            className="px-3 py-2.5 border border-gray-300 rounded-xl bg-white text-sm"
           >
             <option value="active">Đề còn hạn</option>
             <option value="expired">Đề đã hết hạn</option>
           </select>
           <button
             onClick={() => navigate('/exam/create')}
-            className="px-4 py-2 rounded-lg font-medium bg-indigo-600 text-white hover:bg-indigo-700"
+            className="px-4 py-2.5 rounded-xl font-semibold bg-indigo-600 text-white hover:bg-indigo-700"
           >
             📝 Tạo đề
           </button>
           <button
             onClick={() => setIsQuickOpen(true)}
-            className="px-4 py-2 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700"
+            className="px-4 py-2.5 rounded-xl font-semibold bg-green-600 text-white hover:bg-green-700"
           >
             📥 Dán nhanh JSON/HTML
           </button>
@@ -133,7 +138,7 @@ const DeckList = () => {
             <button
               key={tag}
               onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition ${
+              className={`px-3 py-1.5 rounded-full text-sm font-semibold transition ${
                 selectedTag === tag
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -147,7 +152,7 @@ const DeckList = () => {
 
       {/* Decks Grid */}
       {filteredDecks.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
+        <div className="text-center py-12 bg-white rounded-2xl">
           <p className="text-gray-600 text-lg">Không tìm thấy deck nào. Hãy tạo hoặc tải lên file HTML!</p>
         </div>
       ) : (
@@ -155,10 +160,11 @@ const DeckList = () => {
           {filteredDecks.map((deck) => (
             <div
               key={deck.id}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden"
+              className="bg-white rounded-2xl hover:shadow-lg transition overflow-hidden"
             >
-              <div className="bg-gradient-primary h-24 flex items-center justify-center text-white text-3xl">
-                🎯
+              <div className="bg-gradient-primary h-24 flex items-center justify-between px-5 text-white">
+                <span className="text-3xl">🎯</span>
+                <span className="text-xs uppercase tracking-[0.18em] font-semibold opacity-80">Deck</span>
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{deck.title}</h3>
@@ -170,11 +176,11 @@ const DeckList = () => {
                     {deck.cards.length} thẻ
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded ${deck.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                      {deck.status === 'expired' ? 'Expired' : 'Active'}
+                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${deck.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                      {deck.status === 'expired' ? 'Hết hạn' : 'Đang mở'}
                     </span>
-                    <span className={`text-xs px-2 py-1 rounded ${deck.tag === 'Quiz' ? 'bg-purple-100 text-purple-700' : deck.tag === 'Flashcard' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {deck.tag || 'None'}
+                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${deck.tag === 'Quiz' ? 'bg-purple-100 text-purple-700' : deck.tag === 'Flashcard' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {deck.tag || 'Chưa gắn thẻ'}
                     </span>
                   </div>
                 </div>
@@ -182,14 +188,14 @@ const DeckList = () => {
                   {deck.status === 'expired' ? (
                     <button
                       disabled
-                      className="flex-1 bg-gray-300 text-gray-600 py-2 rounded-lg text-center font-medium cursor-not-allowed"
+                      className="flex-1 bg-gray-300 text-gray-600 py-2.5 rounded-xl text-center font-semibold cursor-not-allowed"
                     >
                       ⏰ Đã hết hạn
                     </button>
                   ) : (
                     <a
                       href={`/deck/${deck.id}/cards`}
-                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-center font-medium hover:bg-blue-700 transition"
+                      className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-center font-semibold hover:bg-blue-700 transition"
                     >
                       📖 Ôn Tập
                     </a>
@@ -197,7 +203,7 @@ const DeckList = () => {
                   {isAdmin && (
                   <button
                     onClick={() => handleDelete(deck.id)}
-                    className="px-4 py-2 text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition"
+                    className="px-4 py-2.5 text-red-600 border border-red-600 rounded-xl hover:bg-red-50 transition font-semibold"
                   >
                     🗑️ Xóa
                   </button>
@@ -212,7 +218,7 @@ const DeckList = () => {
       {/* Quick Paste Modal */}
       {isQuickOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 space-y-4 border border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold text-gray-900">📥 Dán nhanh JSON/HTML</h3>
               <button onClick={() => setIsQuickOpen(false)} className="text-gray-500 hover:text-gray-700 text-xl">×</button>
@@ -232,7 +238,7 @@ const DeckList = () => {
                   value={quickName}
                   onChange={(e) => setQuickName(e.target.value)}
                   placeholder="VD: Chương 1 - Quiz"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div className="space-y-2">
@@ -242,7 +248,7 @@ const DeckList = () => {
                   value={quickDesc}
                   onChange={(e) => setQuickDesc(e.target.value)}
                   placeholder="VD: Batch 1 - Giới thiệu & Lịch sử"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -254,7 +260,7 @@ const DeckList = () => {
                 onChange={(e) => setQuickContent(e.target.value)}
                 rows={14}
                 placeholder="Dán JSON Quiz/Flashcard hoặc toàn bộ HTML có chứa dữ liệu"
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 font-mono text-sm"
               />
               <div className="text-xs text-gray-500">Ký tự: {quickContent.length}</div>
             </div>
@@ -262,14 +268,14 @@ const DeckList = () => {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setIsQuickOpen(false)}
-                className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300"
+                className="px-4 py-2.5 rounded-xl bg-gray-200 text-gray-800 hover:bg-gray-300 font-semibold"
                 disabled={quickLoading}
               >
                 Hủy
               </button>
               <button
                 onClick={handleQuickPaste}
-                className={`px-5 py-2 rounded-lg text-white font-semibold ${quickLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+                className={`px-5 py-2.5 rounded-xl text-white font-semibold ${quickLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
                 disabled={quickLoading}
               >
                 {quickLoading ? 'Đang tạo...' : 'Tạo deck mới'}
