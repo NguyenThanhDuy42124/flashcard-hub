@@ -78,3 +78,11 @@ Su dung nguyen van doan duoi de giu dung gu lam viec:
   - `npx repomix --style markdown -o repomix-context.md`
 - Dong goi tap trung code + docs:
   - `npx repomix --include "backend/**,frontend/src/**,*.md" --style markdown -o repomix-focused.md`
+
+## 8) Ca nhan hoa bat buoc
+- Yeu cau mac dinh cho moi AI session:
+  - Sau khi sua code, phai auto run de verify (it nhat build/test lien quan).
+  - Neu co thay doi frontend, bat buoc chay `npm run build`.
+  - Sau khi run/build xanh, phai commit roi push luon len `origin/main` (tru khi user yeu cau khac).
+- Mau cau nhac nhanh de chen vao prompt dau phien:
+  - "Sau moi thay doi, hay auto run verify, neu lien quan frontend thi build, sau do commit va push luon." 

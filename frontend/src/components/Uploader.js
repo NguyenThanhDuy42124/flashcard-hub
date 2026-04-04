@@ -4,6 +4,7 @@ import { decksAPI } from '../api';
 
 const Uploader = ({ onUploadSuccess }) => {
   const [activeTab, setActiveTab] = useState('file'); // 'file' or 'paste'
+  const [showGuide, setShowGuide] = useState(false);
   
   // File upload state
   const [file, setFile] = useState(null);
@@ -124,6 +125,50 @@ const Uploader = ({ onUploadSuccess }) => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="px-8 pt-8 pb-5 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">📥 Khu vực Tải Lên Deck</h2>
+              <p className="text-gray-600">Bạn có thể upload file hoặc paste HTML để tạo deck mới.</p>
+            </div>
+            <button
+              onClick={() => setShowGuide((prev) => !prev)}
+              className="shrink-0 border border-blue-600 text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50"
+            >
+              {showGuide ? 'Ẩn hướng dẫn' : '📘 Hướng dẫn tạo Deck mới'}
+            </button>
+          </div>
+
+          {showGuide && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+              <p className="font-semibold text-gray-900">Dùng Prompt Pro để tạo Deck nhanh:</p>
+              <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                <li>Mở một trong hai prompt mẫu bên dưới.</li>
+                <li>Điền chủ đề, cấp độ, số lượng thẻ rồi copy kết quả HTML/JSON phù hợp.</li>
+                <li>Dán vào tab Paste HTML hoặc lưu thành file .html để upload.</li>
+              </ul>
+              <div className="flex flex-col gap-2 pt-1">
+                <a
+                  href="https://gemini.google.com/gem/1s8ov0f5bEAO3twc3-WPzig9HXQCEJS_U?usp=sharing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 hover:text-blue-800 underline break-all"
+                >
+                  Prompt mẫu 1
+                </a>
+                <a
+                  href="https://gemini.google.com/gem/1SGEPM6ohDE1UNp8DL2Xb6KQf3L9OuUxm?usp=sharing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 hover:text-blue-800 underline break-all"
+                >
+                  Prompt mẫu 2
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Tabs */}
         <div className="flex border-b">
           <button
