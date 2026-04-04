@@ -405,24 +405,17 @@ async def add_secure_headers(request, call_next):
     return response
 
 
-# Simple request logger to surface IP/User-Agent for monitoring
+# Minimal request logger: keep only method/path and client IP
 @app.middleware("http")
 async def log_request_meta(request: Request, call_next):
     forwarded_for = request.headers.get("x-forwarded-for")
     client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "unknown")
-    ua = request.headers.get("user-agent", "")
-    referer = request.headers.get("referer", "")
-    user_header = request.headers.get("x-user") or request.headers.get("x-user-id") or "anonymous"
 
     try:
         response = await call_next(request)
         return response
     finally:
-        msg = (
-            f"🌐 {request.method} {request.url.path} "
-            f"| user={user_header} | ip={client_ip} | forwarded={forwarded_for or '-'} "
-            f"| ua={ua} | referer={referer or '-'}"
-        )
+        msg = f"🌐 {request.method} {request.url.path} | ip={client_ip}"
         # Send to uvicorn access logger so it shows up in terminal
         access_logger.info(msg)
         print(msg, flush=True)

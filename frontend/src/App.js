@@ -138,9 +138,9 @@ function App() {
         {showScrollTop && (
           <button
             onClick={scrollToTop}
-            className="scroll-top-btn fixed right-5 bottom-6 z-50 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all"
-            title="Lên đầu trang"
-            aria-label="Lên đầu trang"
+            className="scroll-top-btn fixed right-4 sm:right-6 bottom-6 z-50 w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all"
+            title="Quay về đầu trang"
+            aria-label="Quay về đầu trang"
           >
             ↑
           </button>
