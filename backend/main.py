@@ -273,9 +273,10 @@ def export_deck_to_html(deck: Deck, cards: List[Card]) -> str:
 
         if quiz_meta:
             options = quiz_meta.get("options", {})
+            correct_badge = '<span style="color:#16a34a;font-weight:700">(Đúng)</span>'
             options_html = "".join([
                 f"<li><strong>{html.escape(str(k))}.</strong> {html.escape(str(v))}"
-                f" {'<span style=\"color:#16a34a;font-weight:700\">(Đúng)</span>' if k == quiz_meta.get('correct') else ''}</li>"
+                f" {correct_badge if k == quiz_meta.get('correct') else ''}</li>"
                 for k, v in options.items()
             ])
             explanation = html.escape(quiz_meta.get("explanation") or "")
@@ -347,11 +348,12 @@ def export_deck_to_docx(deck: Deck, cards: List[Card]) -> BytesIO:
     for idx, card in enumerate(cards, start=1):
         document.add_heading(f"Thẻ #{idx}: {card.title or card.front or 'Không tiêu đề'}", level=1)
         document.add_paragraph(f"Chương: {card.chapter or 'Chưa phân chương'}")
-        document.add_paragraph("Mặt trước:")
+        document.add_paragraph("Câu Hỏi:")
         document.add_paragraph(card.front or "")
 
         quiz_meta = parse_quiz_meta(card.back)
         if quiz_meta:
+            document.add_paragraph("Câu Trả Lời:")
             document.add_paragraph("Dạng: Trắc nghiệm")
             options = quiz_meta.get("options", {})
             correct_key = quiz_meta.get("correct")
@@ -361,7 +363,7 @@ def export_deck_to_docx(deck: Deck, cards: List[Card]) -> BytesIO:
             if quiz_meta.get("explanation"):
                 document.add_paragraph(f"Giải thích: {quiz_meta.get('explanation')}")
         else:
-            document.add_paragraph("Mặt sau:")
+            document.add_paragraph("Câu Trả Lời:")
             if card.back:
                 for line in card.back.splitlines():
                     document.add_paragraph(line)
@@ -735,6 +737,8 @@ async def get_deck(deck_id: int, db: Session = Depends(get_db)):
 async def export_deck(
     deck_id: int,
     format: str = Query("html", regex="^(html|docx)$", description="Định dạng xuất: html hoặc docx"),
+    sort_by: str = Query("position", description="Sort by: position, chapter, title, created"),
+    chapters: str = Query(None, description="Filter chapters, phân tách bằng dấu phẩy"),
     db: Session = Depends(get_db)
 ):
     """Export a deck to HTML or DOCX for offline use or re-upload."""
@@ -742,7 +746,21 @@ async def export_deck(
     if not deck:
         raise HTTPException(status_code=404, detail=f"Deck {deck_id} not found")
 
-    cards = db.query(Card).filter(Card.deck_id == deck_id).order_by(Card.position.nulls_last(), Card.created_at).all()
+    query = db.query(Card).filter(Card.deck_id == deck_id)
+
+    if chapters:
+        chapter_list = [c.strip() for c in chapters.split(",") if c.strip() and c.strip() != "Tất cả"]
+        if chapter_list:
+            query = query.filter(Card.chapter.in_(chapter_list))
+
+    if sort_by == "title":
+        cards = query.order_by(Card.title, Card.position.nulls_last()).all()
+    elif sort_by == "created":
+        cards = query.order_by(Card.created_at.desc()).all()
+    elif sort_by == "chapter":
+        cards = query.order_by(Card.chapter, Card.position.nulls_last(), Card.created_at).all()
+    else:  # position is default
+        cards = query.order_by(Card.position.nulls_last(), Card.created_at).all()
 
     filename_base = f"deck-{deck_id}"
     if format == "html":

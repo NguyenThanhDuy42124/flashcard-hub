@@ -462,7 +462,12 @@ const CardBrowser = () => {
   const handleExportDeck = async (format) => {
     try {
       setExportingFormat(format);
-      const response = await decksAPI.exportDeck(deckId, format);
+      const selectedChapterList = selectedChapters.filter(ch => ch !== 'Tất cả');
+      const exportOptions = {
+        sortBy,
+        chapters: selectedChapterList.length ? selectedChapterList.join(',') : null,
+      };
+      const response = await decksAPI.exportDeck(deckId, format, exportOptions);
       const blobData = response.data instanceof Blob
         ? response.data
         : new Blob([response.data], { type: format === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/html' });

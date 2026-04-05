@@ -32,9 +32,16 @@ export const decksAPI = {
   getDeck: (deckId) =>
     API.get(`/decks/${deckId}`),
 
-  // Export deck as HTML or DOCX
-  exportDeck: (deckId, format = 'html') =>
-    API.get(`/decks/${deckId}/export`, { params: { format }, responseType: 'blob' }),
+  // Export deck as HTML or DOCX (respect current sort/filter)
+  exportDeck: (deckId, format = 'html', options = {}) =>
+    API.get(`/decks/${deckId}/export`, {
+      params: {
+        format,
+        sort_by: options.sortBy || 'position',
+        chapters: options.chapters || null,
+      },
+      responseType: 'blob'
+    }),
 
   // Get deck cards with sorting and filtering
   getDeckCards: (deckId, sortBy = 'position', chapter = null, search = null) =>
