@@ -22,7 +22,7 @@ const CardBrowser = () => {
   const [selectedChapters, setSelectedChapters] = useState(['Tất cả']);
   const [chapters, setChapters] = useState([]);
   const [flippedCards, setFlippedCards] = useState({});
-  const [sortBy, setSortBy] = useState('position');
+  const [sortBy, setSortBy] = useState('chapter');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCards, setSelectedCards] = useState(new Set());

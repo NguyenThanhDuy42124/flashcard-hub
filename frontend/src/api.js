@@ -37,14 +37,14 @@ export const decksAPI = {
     API.get(`/decks/${deckId}/export`, {
       params: {
         format,
-        sort_by: options.sortBy || 'position',
+        sort_by: options.sortBy || 'chapter',
         chapters: options.chapters || null,
       },
       responseType: 'blob'
     }),
 
   // Get deck cards with sorting and filtering
-  getDeckCards: (deckId, sortBy = 'position', chapter = null, search = null) =>
+  getDeckCards: (deckId, sortBy = 'chapter', chapter = null, search = null) =>
     API.get(`/decks/${deckId}/cards`, { 
       params: { 
         sort_by: sortBy,

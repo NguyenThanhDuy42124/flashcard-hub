@@ -737,7 +737,7 @@ async def get_deck(deck_id: int, db: Session = Depends(get_db)):
 async def export_deck(
     deck_id: int,
     format: str = Query("html", regex="^(html|docx)$", description="Định dạng xuất: html hoặc docx"),
-    sort_by: str = Query("position", description="Sort by: position, chapter, title, created"),
+    sort_by: str = Query("chapter", description="Sort by: position, chapter, title, created"),
     chapters: str = Query(None, description="Filter chapters, phân tách bằng dấu phẩy"),
     db: Session = Depends(get_db)
 ):
@@ -782,7 +782,7 @@ async def export_deck(
 @app.get("/api/decks/{deck_id}/cards", response_model=List[CardResponse])
 async def get_deck_cards(
     deck_id: int,
-    sort_by: str = Query("position", description="Sort by: position, chapter, title, created"),
+    sort_by: str = Query("chapter", description="Sort by: position, chapter, title, created"),
     chapter: str = Query(None, description="Filter by chapter"),
     search: str = Query(None, description="Search by title"),
     db: Session = Depends(get_db)
