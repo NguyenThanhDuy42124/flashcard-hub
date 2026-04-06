@@ -85,4 +85,18 @@ Su dung nguyen van doan duoi de giu dung gu lam viec:
   - Neu co thay doi frontend, bat buoc chay `npm run build`.
   - Sau khi run/build xanh, phai commit roi push luon len `origin/main` (tru khi user yeu cau khac).
 - Mau cau nhac nhanh de chen vao prompt dau phien:
-  - "Sau moi thay doi, hay auto run verify, neu lien quan frontend thi build, sau do commit va push luon." 
+  - "Sau moi thay doi, hay auto run verify, neu lien quan frontend thi build, sau do commit va push luon."
+
+## 9) Log cap nhat phien gan nhat (Quiz + Xem nhanh)
+- Da bo sung Quiz Mode cho Deck:
+  - Them API `GET /api/quiz` (loc theo deck/chapter, lay so luong cau theo `limit`, random cau hoi).
+  - Them man hinh cau hinh quiz (so cau, chapter), luong lam bai tung cau, cham diem, ket qua cuoi va lam lai.
+- Da bo sung che do "Xem nhanh" cho flashcard:
+  - Cau hinh so the/chapter truoc khi bat dau.
+  - Hien thi tung the (front/back) va nut "Cau hoi tiep theo" khong can chon dap an.
+  - Co progress va man hinh hoan tat.
+- Da verify ky thuat:
+  - Da test endpoint `/api/quiz` bang HTTP thuc te, tra payload dung schema.
+  - Da run build frontend thanh cong.
+- Commit da tao va da push:
+  - `66257ab` - `feat: add quiz mode for deck and quick flashcard review`
