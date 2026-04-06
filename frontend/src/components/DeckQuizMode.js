@@ -136,19 +136,20 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
   };
 
   const currentQuestion = quizList[currentQuestionIndex];
+  const optionLabels = ['A', 'B', 'C', 'D'];
 
   if (!quizStarted) {
     return (
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-5 sm:p-8">
+        <div className="bg-[#111312] rounded-2xl border border-[#2b3130] shadow-[0_26px_60px_-36px_rgba(0,0,0,0.85)] p-5 sm:p-8">
           <div className="flex items-center justify-between gap-3 mb-6">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Làm Quiz: {deckTitle}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100">Làm Quiz: {deckTitle}</h2>
             <button
               onClick={() => {
                 resetQuizState();
                 onExit();
               }}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 rounded-lg border border-zinc-600 text-zinc-200 hover:bg-zinc-800"
             >
               Quay lại cards
             </button>
@@ -156,7 +157,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
 
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Bạn muốn làm bao nhiêu câu?</label>
+              <label className="block text-sm font-semibold text-zinc-300 mb-2">Bạn muốn làm bao nhiêu câu?</label>
               <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                 <input
                   type="number"
@@ -164,10 +165,10 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                   value={limitInput}
                   onChange={(event) => setLimitInput(event.target.value)}
                   disabled={useAllQuestions}
-                  className="w-full sm:w-48 px-4 py-2 border border-gray-300 rounded-lg"
+                  className="w-full sm:w-48 px-4 py-2 border border-zinc-600 bg-zinc-900 text-zinc-100 rounded-lg"
                   placeholder="Ví dụ: 5, 10, 20"
                 />
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <label className="inline-flex items-center gap-2 text-sm text-zinc-300">
                   <input
                     type="checkbox"
                     checked={useAllQuestions}
@@ -179,15 +180,15 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Chọn chương</label>
+              <label className="block text-sm font-semibold text-zinc-300 mb-2">Chọn chương</label>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => toggleChapter('Tất cả')}
                   className={`px-3 py-1.5 rounded-full text-sm font-semibold border ${
                     selectedChapters.includes('Tất cả')
-                      ? 'bg-gray-800 text-white border-gray-800'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      ? 'bg-zinc-200 text-zinc-900 border-zinc-200'
+                      : 'bg-zinc-900 text-zinc-300 border-zinc-700 hover:bg-zinc-800'
                   }`}
                 >
                   Tất cả
@@ -199,8 +200,8 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                     onClick={() => toggleChapter(chapter)}
                     className={`px-3 py-1.5 rounded-full text-sm font-semibold border ${
                       selectedChapters.includes(chapter)
-                        ? 'bg-indigo-700 text-white border-indigo-700'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        ? 'bg-amber-700 text-amber-50 border-amber-700'
+                        : 'bg-zinc-900 text-zinc-300 border-zinc-700 hover:bg-zinc-800'
                     }`}
                   >
                     {chapter}
@@ -221,7 +222,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                 onClick={handleStartQuiz}
                 disabled={loadingQuiz}
                 className={`px-6 py-3 rounded-lg font-semibold text-white ${
-                  loadingQuiz ? 'bg-gray-400 cursor-wait' : 'bg-slate-700 hover:bg-slate-800'
+                  loadingQuiz ? 'bg-zinc-600 cursor-wait' : 'bg-amber-700 hover:bg-amber-600'
                 }`}
               >
                 {loadingQuiz ? 'Đang chuẩn bị quiz...' : 'Bắt đầu Quiz'}
@@ -238,35 +239,35 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
     const accuracy = total > 0 ? Math.round((score / total) * 100) : 0;
     return (
       <div className="max-w-3xl mx-auto px-3 sm:px-4 py-10">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-6 sm:p-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Hoàn thành Quiz</h2>
-          <p className="text-gray-600 mb-6">Bạn đã làm xong tất cả câu hỏi.</p>
+        <div className="bg-[#111312] rounded-2xl border border-[#2b3130] shadow-[0_26px_60px_-36px_rgba(0,0,0,0.85)] p-6 sm:p-8 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100 mb-2">Hoàn thành Quiz</h2>
+          <p className="text-zinc-400 mb-6">Bạn đã làm xong tất cả câu hỏi.</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-            <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
-              <div className="text-sm text-blue-700 font-semibold">Điểm số</div>
-              <div className="text-2xl font-extrabold text-blue-800">{score}/{total}</div>
+            <div className="rounded-xl bg-zinc-900 border border-zinc-700 p-4">
+              <div className="text-sm text-zinc-400 font-semibold">Điểm số</div>
+              <div className="text-2xl font-extrabold text-zinc-100">{score}/{total}</div>
             </div>
-            <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-4">
-              <div className="text-sm text-emerald-700 font-semibold">Tỷ lệ đúng</div>
-              <div className="text-2xl font-extrabold text-emerald-800">{accuracy}%</div>
+            <div className="rounded-xl bg-emerald-950/35 border border-emerald-700/40 p-4">
+              <div className="text-sm text-emerald-300 font-semibold">Tỷ lệ đúng</div>
+              <div className="text-2xl font-extrabold text-emerald-200">{accuracy}%</div>
             </div>
-            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-              <div className="text-sm text-slate-600 font-semibold">Tổng câu</div>
-              <div className="text-2xl font-extrabold text-slate-800">{total}</div>
+            <div className="rounded-xl bg-zinc-900 border border-zinc-700 p-4">
+              <div className="text-sm text-zinc-400 font-semibold">Tổng câu</div>
+              <div className="text-2xl font-extrabold text-zinc-100">{total}</div>
             </div>
           </div>
 
           <div className="flex flex-wrap justify-center gap-3">
             <button
               onClick={handleRetryQuiz}
-              className="px-5 py-2.5 rounded-lg bg-slate-700 text-white font-semibold hover:bg-slate-800"
+              className="px-5 py-2.5 rounded-lg bg-amber-700 text-amber-50 font-semibold hover:bg-amber-600"
             >
               Làm lại quiz
             </button>
             <button
               onClick={resetQuizState}
-              className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50"
+              className="px-5 py-2.5 rounded-lg border border-zinc-600 text-zinc-200 font-semibold hover:bg-zinc-800"
             >
               Cấu hình lại
             </button>
@@ -275,7 +276,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                 resetQuizState();
                 onExit();
               }}
-              className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50"
+              className="px-5 py-2.5 rounded-lg border border-zinc-600 text-zinc-200 font-semibold hover:bg-zinc-800"
             >
               Thoát Quiz Mode
             </button>
@@ -289,30 +290,30 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-5 sm:p-8">
+      <div className="bg-[#111312] rounded-2xl border border-[#2b3130] shadow-[0_26px_60px_-36px_rgba(0,0,0,0.85)] p-5 sm:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Quiz Mode</h2>
-          <div className="text-sm font-semibold text-gray-600">
+          <h2 className="text-xl sm:text-2xl font-bold text-zinc-100">Quiz Mode</h2>
+          <div className="text-sm font-semibold text-zinc-300">
             Câu {currentQuestionIndex + 1}/{quizList.length}
           </div>
         </div>
 
-        <div className="mb-5 rounded-xl bg-slate-100 border border-slate-200 p-4">
-          <p className="text-base sm:text-lg font-semibold text-slate-900 leading-relaxed">
+        <div className="mb-5 rounded-xl bg-zinc-900 border border-zinc-700 p-4">
+          <p className="text-base sm:text-lg font-semibold text-zinc-100 leading-relaxed">
             {currentQuestion.question}
           </p>
         </div>
 
         <div className="space-y-3 mb-5">
-          {currentQuestion.answers.map((answer) => {
-            let answerClass = 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50';
+          {currentQuestion.answers.map((answer, idx) => {
+            let answerClass = 'border-zinc-700 bg-zinc-900 text-zinc-100 hover:border-amber-500/60 hover:bg-zinc-800';
             if (showResult) {
               if (answer === currentQuestion.correct_answer) {
-                answerClass = 'border-emerald-300 bg-emerald-50 text-emerald-800';
+                answerClass = 'border-emerald-500/70 bg-emerald-500/15 text-emerald-200';
               } else if (answer === selectedAnswer) {
-                answerClass = 'border-red-300 bg-red-50 text-red-800';
+                answerClass = 'border-rose-500/70 bg-rose-500/15 text-rose-200';
               } else {
-                answerClass = 'border-slate-200 bg-slate-50 text-slate-500';
+                answerClass = 'border-zinc-800 bg-zinc-900/60 text-zinc-500';
               }
             }
 
@@ -322,23 +323,26 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                 type="button"
                 onClick={() => handleSelectAnswer(answer)}
                 disabled={showResult}
-                className={`w-full text-left px-4 py-3 rounded-xl border-2 font-medium transition ${answerClass} ${
+                className={`w-full text-left px-4 py-3 rounded-xl border-2 font-medium transition flex items-center gap-3 ${answerClass} ${
                   showResult ? 'cursor-default' : ''
                 }`}
               >
-                {answer}
+                <span className="w-8 h-8 rounded-lg border border-zinc-600 bg-zinc-800 text-zinc-200 font-bold text-sm inline-flex items-center justify-center shrink-0">
+                  {optionLabels[idx] || String.fromCharCode(65 + idx)}
+                </span>
+                <span>{answer}</span>
               </button>
             );
           })}
         </div>
 
         {showResult && (
-          <div className={`mb-5 p-4 rounded-xl border ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-            <p className={`font-bold ${isCorrect ? 'text-emerald-700' : 'text-red-700'}`}>
+          <div className={`mb-5 p-4 rounded-xl border ${isCorrect ? 'bg-emerald-500/12 border-emerald-500/40' : 'bg-rose-500/12 border-rose-500/40'}`}>
+            <p className={`font-bold ${isCorrect ? 'text-emerald-200' : 'text-rose-200'}`}>
               {isCorrect ? '✅ Chính xác' : '❌ Chưa đúng'}
             </p>
             {currentQuestion.explanation && (
-              <p className="mt-2 text-sm sm:text-base text-slate-700 leading-relaxed">
+              <p className="mt-2 text-sm sm:text-base text-zinc-300 leading-relaxed">
                 Giải thích: {currentQuestion.explanation}
               </p>
             )}
@@ -346,14 +350,14 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
         )}
 
         <div className="flex flex-wrap gap-3 justify-between items-center">
-          <div className="text-sm font-semibold text-gray-600">Điểm hiện tại: {score}</div>
+          <div className="text-sm font-semibold text-zinc-300">Điểm hiện tại: {score}</div>
           <div className="flex gap-3">
             <button
               onClick={() => {
                 resetQuizState();
                 onExit();
               }}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 rounded-lg border border-zinc-600 text-zinc-200 hover:bg-zinc-800"
             >
               Thoát
             </button>
@@ -361,7 +365,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
               onClick={handleNextQuestion}
               disabled={!showResult}
               className={`px-5 py-2 rounded-lg font-semibold text-white ${
-                !showResult ? 'bg-gray-400 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-800'
+                !showResult ? 'bg-zinc-600 cursor-not-allowed' : 'bg-amber-700 hover:bg-amber-600'
               }`}
             >
               {currentQuestionIndex === quizList.length - 1 ? 'Xem kết quả' : 'Câu hỏi tiếp theo'}
