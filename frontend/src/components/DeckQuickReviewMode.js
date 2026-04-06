@@ -95,6 +95,11 @@ const DeckQuickReviewMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
     setCurrentIndex((prev) => prev + 1);
   };
 
+  const handlePrev = () => {
+    if (currentIndex <= 0) return;
+    setCurrentIndex((prev) => prev - 1);
+  };
+
   const handleRetry = () => {
     setReviewList((prev) => shuffleArray(prev));
     setCurrentIndex(0);
@@ -265,15 +270,28 @@ const DeckQuickReviewMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
         </div>
 
         <div className="flex flex-wrap gap-3 justify-between items-center">
-          <button
-            onClick={() => {
-              resetState();
-              onExit();
-            }}
-            className="px-4 py-2 rounded-lg border border-zinc-600 text-zinc-200 hover:bg-zinc-800"
-          >
-            Thoát
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handlePrev}
+              disabled={currentIndex === 0}
+              className={`px-4 py-2 rounded-lg font-semibold ${
+                currentIndex === 0
+                  ? 'border border-zinc-700 text-zinc-500 cursor-not-allowed'
+                  : 'border border-zinc-600 text-zinc-200 hover:bg-zinc-800'
+              }`}
+            >
+              Câu trước
+            </button>
+            <button
+              onClick={() => {
+                resetState();
+                onExit();
+              }}
+              className="px-4 py-2 rounded-lg border border-zinc-600 text-zinc-200 hover:bg-zinc-800"
+            >
+              Thoát
+            </button>
+          </div>
 
           <button
             onClick={handleNext}

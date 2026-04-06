@@ -21,9 +21,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
 
   const [quizList, setQuizList] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState('');
-  const [showResult, setShowResult] = useState(false);
-  const [score, setScore] = useState(0);
+  const [answersByIndex, setAnswersByIndex] = useState({});
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizCompleted, setQuizCompleted] = useState(false);
 
@@ -47,9 +45,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
   const resetQuizState = () => {
     setQuizList([]);
     setCurrentQuestionIndex(0);
-    setSelectedAnswer('');
-    setShowResult(false);
-    setScore(0);
+    setAnswersByIndex({});
     setQuizStarted(false);
     setQuizCompleted(false);
     setError('');
@@ -88,9 +84,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
 
       setQuizList(questions);
       setCurrentQuestionIndex(0);
-      setSelectedAnswer('');
-      setShowResult(false);
-      setScore(0);
+      setAnswersByIndex({});
       setQuizCompleted(false);
       setQuizStarted(true);
     } catch (err) {
@@ -101,32 +95,28 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
   };
 
   const handleSelectAnswer = (answer) => {
-    if (showResult || quizCompleted) return;
-    const currentQuestion = quizList[currentQuestionIndex];
-    setSelectedAnswer(answer);
-    setShowResult(true);
-    if (answer === currentQuestion.correct_answer) {
-      setScore((prev) => prev + 1);
-    }
+    if (quizCompleted || answersByIndex[currentQuestionIndex]) return;
+    setAnswersByIndex((prev) => ({ ...prev, [currentQuestionIndex]: answer }));
   };
 
   const handleNextQuestion = () => {
-    if (!showResult) return;
+    if (!answersByIndex[currentQuestionIndex]) return;
     if (currentQuestionIndex >= quizList.length - 1) {
       setQuizCompleted(true);
       return;
     }
 
     setCurrentQuestionIndex((prev) => prev + 1);
-    setSelectedAnswer('');
-    setShowResult(false);
+  };
+
+  const handlePrevQuestion = () => {
+    if (currentQuestionIndex <= 0) return;
+    setCurrentQuestionIndex((prev) => prev - 1);
   };
 
   const handleRetryQuiz = () => {
     setCurrentQuestionIndex(0);
-    setSelectedAnswer('');
-    setShowResult(false);
-    setScore(0);
+    setAnswersByIndex({});
     setQuizCompleted(false);
     setQuizStarted(true);
     setQuizList((prev) => prev.map((question) => ({
@@ -136,6 +126,11 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
   };
 
   const currentQuestion = quizList[currentQuestionIndex];
+  const selectedAnswer = answersByIndex[currentQuestionIndex] || '';
+  const showResult = !!selectedAnswer;
+  const score = quizList.reduce((acc, question, idx) => {
+    return answersByIndex[idx] === question.correct_answer ? acc + 1 : acc;
+  }, 0);
   const optionLabels = ['A', 'B', 'C', 'D'];
 
   if (!quizStarted) {
@@ -352,6 +347,17 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
         <div className="flex flex-wrap gap-3 justify-between items-center">
           <div className="text-sm font-semibold text-zinc-300">Điểm hiện tại: {score}</div>
           <div className="flex gap-3">
+            <button
+              onClick={handlePrevQuestion}
+              disabled={currentQuestionIndex === 0}
+              className={`px-4 py-2 rounded-lg font-semibold ${
+                currentQuestionIndex === 0
+                  ? 'border border-zinc-700 text-zinc-500 cursor-not-allowed'
+                  : 'border border-zinc-600 text-zinc-200 hover:bg-zinc-800'
+              }`}
+            >
+              Câu trước
+            </button>
             <button
               onClick={() => {
                 resetQuizState();
