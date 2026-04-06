@@ -16,6 +16,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
   const [limitInput, setLimitInput] = useState(String(DEFAULT_LIMIT));
   const [useAllQuestions, setUseAllQuestions] = useState(false);
   const [selectedChapters, setSelectedChapters] = useState(['Tất cả']);
+  const [selectionMode, setSelectionMode] = useState('random');
   const [loadingQuiz, setLoadingQuiz] = useState(false);
   const [error, setError] = useState('');
 
@@ -66,7 +67,8 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
       const response = await decksAPI.getQuizQuestions(
         Number(deckId),
         useAllQuestions ? null : parsedLimit,
-        chapterFilters
+        chapterFilters,
+        selectionMode
       );
 
       const questions = (response.data || []).map((item) => {
@@ -202,6 +204,34 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                     {chapter}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-zinc-300 mb-2">Chế độ chọn câu hỏi</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectionMode('random')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold border transition ${
+                    selectionMode === 'random'
+                      ? 'bg-amber-700 text-amber-50 border-amber-700'
+                      : 'bg-zinc-900 text-zinc-300 border-zinc-700 hover:bg-zinc-800'
+                  }`}
+                >
+                  Ngẫu nhiên hoàn toàn
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectionMode('balanced')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold border transition ${
+                    selectionMode === 'balanced'
+                      ? 'bg-amber-700 text-amber-50 border-amber-700'
+                      : 'bg-zinc-900 text-zinc-300 border-zinc-700 hover:bg-zinc-800'
+                  }`}
+                >
+                  Cân bằng các chương
+                </button>
               </div>
             </div>
 

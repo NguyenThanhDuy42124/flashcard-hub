@@ -93,13 +93,14 @@ export const decksAPI = {
     API.post(`/decks/${deckId}/append-from-html`, { html_content: htmlContent }, { params: { admin_override: adminOverride } }),
 
   // Fetch quiz questions for a deck
-  getQuizQuestions: (deckId, limit = null, chapters = []) => {
+  getQuizQuestions: (deckId, limit = null, chapters = [], selectionMode = 'random') => {
     const params = new URLSearchParams();
     params.append('deck_id', deckId);
     if (limit) params.append('limit', limit);
     if (Array.isArray(chapters) && chapters.length > 0) {
       chapters.forEach((chapter) => params.append('chapters', chapter));
     }
+    if (selectionMode) params.append('selection_mode', selectionMode);
     return API.get('/quiz', { params });
   },
 };

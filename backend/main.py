@@ -17,6 +17,7 @@ import html
 from io import BytesIO
 import math
 import random
+from collections import defaultdict
 
 from docx import Document
 
@@ -328,6 +329,50 @@ def build_quiz_question(card: Card, answer_pool: List[str]) -> dict:
         "wrong_answers": unique_wrong_answers[:3],
         "explanation": explanation,
     }
+
+
+def select_quiz_cards_random(cards: List[Card], limit: Optional[int]) -> List[Card]:
+    """Select quiz cards with completely random strategy."""
+    if not cards:
+        return []
+    if limit is not None and limit < len(cards):
+        return random.sample(cards, k=limit)
+    selected_cards = cards[:]
+    random.shuffle(selected_cards)
+    return selected_cards
+
+
+def select_quiz_cards_balanced(cards: List[Card], limit: Optional[int]) -> List[Card]:
+    """Select quiz cards with balanced round-robin chapter distribution."""
+    if not cards:
+        return []
+
+    target_count = min(limit, len(cards)) if limit is not None else len(cards)
+    grouped_cards = defaultdict(list)
+    for card in cards:
+        chapter_name = (card.chapter or "General").strip() or "General"
+        grouped_cards[chapter_name].append(card)
+
+    chapter_keys = list(grouped_cards.keys())
+    random.shuffle(chapter_keys)
+    for chapter in chapter_keys:
+        random.shuffle(grouped_cards[chapter])
+
+    selected_cards: List[Card] = []
+    while len(selected_cards) < target_count:
+        has_remaining = False
+        for chapter in chapter_keys:
+            chapter_cards = grouped_cards[chapter]
+            if not chapter_cards:
+                continue
+            has_remaining = True
+            selected_cards.append(chapter_cards.pop())
+            if len(selected_cards) >= target_count:
+                break
+        if not has_remaining:
+            break
+
+    return selected_cards
 
 
 def export_deck_to_html(deck: Deck, cards: List[Card]) -> str:
@@ -909,6 +954,7 @@ async def get_quiz_questions(
     deck_id: int = Query(..., description="Deck ID"),
     limit: Optional[int] = Query(None, ge=1, description="Số câu hỏi muốn lấy"),
     chapters: Optional[List[str]] = Query(None, description="Danh sách chapter, có thể truyền nhiều lần"),
+    selection_mode: str = Query("random", pattern="^(random|balanced)$", description="random hoặc balanced"),
     db: Session = Depends(get_db)
 ):
     """Return quiz questions for a deck with optional chapter and count filters."""
@@ -938,11 +984,10 @@ async def get_quiz_questions(
     if not cards:
         return []
 
-    if limit is not None and limit < len(cards):
-        selected_cards = random.sample(cards, k=limit)
+    if selection_mode == "balanced":
+        selected_cards = select_quiz_cards_balanced(cards, limit)
     else:
-        selected_cards = cards[:]
-        random.shuffle(selected_cards)
+        selected_cards = select_quiz_cards_random(cards, limit)
 
     # Pool đáp án đúng để bù đáp án sai khi card không đủ option.
     answer_pool = [
