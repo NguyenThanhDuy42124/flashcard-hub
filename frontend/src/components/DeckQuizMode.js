@@ -199,7 +199,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                     onClick={() => toggleChapter(chapter)}
                     className={`px-3 py-1.5 rounded-full text-sm font-semibold border ${
                       selectedChapters.includes(chapter)
-                        ? 'bg-blue-600 text-white border-blue-600'
+                        ? 'bg-indigo-700 text-white border-indigo-700'
                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                     }`}
                   >
@@ -221,7 +221,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                 onClick={handleStartQuiz}
                 disabled={loadingQuiz}
                 className={`px-6 py-3 rounded-lg font-semibold text-white ${
-                  loadingQuiz ? 'bg-gray-400 cursor-wait' : 'bg-blue-600 hover:bg-blue-700'
+                  loadingQuiz ? 'bg-gray-400 cursor-wait' : 'bg-slate-700 hover:bg-slate-800'
                 }`}
               >
                 {loadingQuiz ? 'Đang chuẩn bị quiz...' : 'Bắt đầu Quiz'}
@@ -260,7 +260,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
           <div className="flex flex-wrap justify-center gap-3">
             <button
               onClick={handleRetryQuiz}
-              className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
+              className="px-5 py-2.5 rounded-lg bg-slate-700 text-white font-semibold hover:bg-slate-800"
             >
               Làm lại quiz
             </button>
@@ -297,7 +297,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
           </div>
         </div>
 
-        <div className="mb-5 rounded-xl bg-blue-50 border border-blue-100 p-4">
+        <div className="mb-5 rounded-xl bg-slate-100 border border-slate-200 p-4">
           <p className="text-base sm:text-lg font-semibold text-slate-900 leading-relaxed">
             {currentQuestion.question}
           </p>
@@ -361,7 +361,7 @@ const DeckQuizMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
               onClick={handleNextQuestion}
               disabled={!showResult}
               className={`px-5 py-2 rounded-lg font-semibold text-white ${
-                !showResult ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                !showResult ? 'bg-gray-400 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-800'
               }`}
             >
               {currentQuestionIndex === quizList.length - 1 ? 'Xem kết quả' : 'Câu hỏi tiếp theo'}

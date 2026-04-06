@@ -567,13 +567,13 @@ const CardBrowser = () => {
               <div className="flex flex-wrap gap-2 justify-end w-full">
                 <button
                   onClick={() => setIsDeckQuickMode(true)}
-                  className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-cyan-200 text-cyan-700 bg-cyan-50 hover:bg-cyan-100"
+                  className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-slate-300 text-slate-700 bg-slate-100 hover:bg-slate-200"
                 >
                   ⚡ Xem nhanh
                 </button>
                 <button
                   onClick={() => setIsDeckQuizMode(true)}
-                  className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                  className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-stone-300 text-stone-700 bg-stone-100 hover:bg-stone-200"
                 >
                   🧠 Làm Quiz
                 </button>

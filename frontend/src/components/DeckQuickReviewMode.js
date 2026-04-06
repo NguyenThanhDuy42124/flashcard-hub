@@ -166,7 +166,7 @@ const DeckQuickReviewMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                     onClick={() => toggleChapter(chapter)}
                     className={`px-3 py-1.5 rounded-full text-sm font-semibold border ${
                       selectedChapters.includes(chapter)
-                        ? 'bg-cyan-600 text-white border-cyan-600'
+                        ? 'bg-teal-700 text-white border-teal-700'
                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                     }`}
                   >
@@ -188,7 +188,7 @@ const DeckQuickReviewMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
                 onClick={handleStart}
                 disabled={loading}
                 className={`px-6 py-3 rounded-lg font-semibold text-white ${
-                  loading ? 'bg-gray-400 cursor-wait' : 'bg-cyan-600 hover:bg-cyan-700'
+                  loading ? 'bg-gray-400 cursor-wait' : 'bg-slate-700 hover:bg-slate-800'
                 }`}
               >
                 {loading ? 'Đang chuẩn bị...' : 'Bắt đầu xem nhanh'}
@@ -210,7 +210,7 @@ const DeckQuickReviewMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
           <div className="flex flex-wrap justify-center gap-3">
             <button
               onClick={handleRetry}
-              className="px-5 py-2.5 rounded-lg bg-cyan-600 text-white font-semibold hover:bg-cyan-700"
+              className="px-5 py-2.5 rounded-lg bg-slate-700 text-white font-semibold hover:bg-slate-800"
             >
               Xem lại ngẫu nhiên
             </button>
@@ -245,10 +245,10 @@ const DeckQuickReviewMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
           </div>
         </div>
 
-        <div className="mb-4 rounded-xl bg-cyan-50 border border-cyan-100 p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-cyan-700 mb-2">Mặt trước</p>
+        <div className="mb-4 rounded-xl bg-slate-100 border border-slate-200 p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Mặt trước</p>
           {currentCard.chapter && (
-            <div className="mb-2 inline-flex px-2 py-1 rounded-full bg-white border border-cyan-200 text-cyan-700 text-xs font-semibold">
+            <div className="mb-2 inline-flex px-2 py-1 rounded-full bg-white border border-slate-300 text-slate-700 text-xs font-semibold">
               {currentCard.chapter}
             </div>
           )}
@@ -277,7 +277,7 @@ const DeckQuickReviewMode = ({ deckId, deckTitle, chapters = [], onExit }) => {
 
           <button
             onClick={handleNext}
-            className="px-5 py-2 rounded-lg font-semibold text-white bg-cyan-600 hover:bg-cyan-700"
+            className="px-5 py-2 rounded-lg font-semibold text-white bg-slate-700 hover:bg-slate-800"
           >
             {currentIndex === reviewList.length - 1 ? 'Hoàn thành' : 'Câu hỏi tiếp theo'}
           </button>
