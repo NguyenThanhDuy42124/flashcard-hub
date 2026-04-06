@@ -91,6 +91,17 @@ export const decksAPI = {
   // Append HTML to existing deck
   appendCardsFromHtml: (deckId, htmlContent, adminOverride = false) =>
     API.post(`/decks/${deckId}/append-from-html`, { html_content: htmlContent }, { params: { admin_override: adminOverride } }),
+
+  // Fetch quiz questions for a deck
+  getQuizQuestions: (deckId, limit = null, chapters = []) => {
+    const params = new URLSearchParams();
+    params.append('deck_id', deckId);
+    if (limit) params.append('limit', limit);
+    if (Array.isArray(chapters) && chapters.length > 0) {
+      chapters.forEach((chapter) => params.append('chapters', chapter));
+    }
+    return API.get('/quiz', { params });
+  },
 };
 
 // ============== CARD ENDPOINTS ==============

@@ -155,3 +155,12 @@ class ExamCreateResponse(BaseModel):
     expires_at: Optional[datetime] = None
     status: str = "active"
     tag: str = "Quiz"
+
+
+class QuizQuestionResponse(BaseModel):
+    """Quiz question payload used by Quiz Mode endpoint."""
+    id: int
+    question: str
+    correct_answer: str
+    wrong_answers: List[str]
+    explanation: Optional[str] = None

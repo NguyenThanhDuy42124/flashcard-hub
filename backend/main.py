@@ -38,7 +38,7 @@ from schemas import (
     CardCreate, CardResponse, DeckCreate, DeckUpdate, DeckResponse,
     UserCreate, UserResponse, CardReviewRequest, StudySessionCreate,
     StudySessionResponse, UserProgressResponse, CreateDeckFromHTMLRequest,
-    AppendHTMLRequest, ExamCreateRequest, ExamCreateResponse
+    AppendHTMLRequest, ExamCreateRequest, ExamCreateResponse, QuizQuestionResponse
 )
 from parser import parse_html_file
 from srs_engine import sm2_engine
@@ -259,6 +259,75 @@ def parse_quiz_meta(back_content: str):
     except Exception:
         return None
     return None
+
+
+def extract_card_correct_answer(card: Card) -> str:
+    """Resolve a card's correct answer for Quiz Mode."""
+    quiz_meta = parse_quiz_meta(card.back)
+    if quiz_meta:
+        options = quiz_meta.get("options") or {}
+        correct_key = str(quiz_meta.get("correct") or "").strip()
+        answer = str(options.get(correct_key, "")).strip()
+        if answer:
+            return answer
+    return (card.back or "").strip()
+
+
+def build_quiz_question(card: Card, answer_pool: List[str]) -> dict:
+    """Build a normalized quiz question with one correct and three wrong answers."""
+    quiz_meta = parse_quiz_meta(card.back)
+    question = (card.front or card.title or "").strip()
+    correct_answer = extract_card_correct_answer(card)
+    explanation = None
+    wrong_answers: List[str] = []
+
+    if quiz_meta:
+        options = quiz_meta.get("options") or {}
+        correct_key = str(quiz_meta.get("correct") or "").strip()
+        explanation = (quiz_meta.get("explanation") or "").strip() or None
+        for key, value in options.items():
+            option_key = str(key).strip()
+            option_text = str(value or "").strip()
+            if not option_text:
+                continue
+            if option_key == correct_key:
+                correct_answer = option_text
+            elif option_text != correct_answer:
+                wrong_answers.append(option_text)
+    else:
+        # Với card flashcard thường, dùng mặt sau làm đáp án và giải thích.
+        explanation = (card.back or "").strip() or None
+
+    seen = set()
+    unique_wrong_answers = []
+    for answer in wrong_answers:
+        if answer not in seen and answer != correct_answer:
+            seen.add(answer)
+            unique_wrong_answers.append(answer)
+
+    fallback_pool = [
+        value for value in answer_pool
+        if value and value != correct_answer and value not in seen
+    ]
+    random.shuffle(fallback_pool)
+
+    for candidate in fallback_pool:
+        unique_wrong_answers.append(candidate)
+        seen.add(candidate)
+        if len(unique_wrong_answers) >= 3:
+            break
+
+    while len(unique_wrong_answers) < 3:
+        filler = f"Đáp án nhiễu {len(unique_wrong_answers) + 1}"
+        unique_wrong_answers.append(filler)
+
+    return {
+        "id": card.id,
+        "question": question,
+        "correct_answer": correct_answer,
+        "wrong_answers": unique_wrong_answers[:3],
+        "explanation": explanation,
+    }
 
 
 def export_deck_to_html(deck: Deck, cards: List[Card]) -> str:
@@ -833,6 +902,56 @@ async def get_deck_cards(
     except Exception as e:
         logger.error(f"❌ Error fetching cards: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/quiz", response_model=List[QuizQuestionResponse])
+async def get_quiz_questions(
+    deck_id: int = Query(..., description="Deck ID"),
+    limit: Optional[int] = Query(None, ge=1, description="Số câu hỏi muốn lấy"),
+    chapters: Optional[List[str]] = Query(None, description="Danh sách chapter, có thể truyền nhiều lần"),
+    db: Session = Depends(get_db)
+):
+    """Return quiz questions for a deck with optional chapter and count filters."""
+    deck = db.query(Deck).filter(Deck.id == deck_id).first()
+    if not deck:
+        raise HTTPException(status_code=404, detail="Deck not found")
+
+    if mark_deck_expired_if_needed(db, deck):
+        db.commit()
+        db.refresh(deck)
+
+    if deck.status == "expired":
+        raise HTTPException(status_code=410, detail="Đề đã hết hạn")
+
+    query = db.query(Card).filter(Card.deck_id == deck_id)
+    normalized_chapters = []
+    if chapters:
+        normalized_chapters = [
+            chapter.strip() for chapter in chapters
+            if chapter and chapter.strip() and chapter.strip() != "Tất cả"
+        ]
+
+    if normalized_chapters:
+        query = query.filter(Card.chapter.in_(normalized_chapters))
+
+    cards = query.all()
+    if not cards:
+        return []
+
+    if limit is not None and limit < len(cards):
+        selected_cards = random.sample(cards, k=limit)
+    else:
+        selected_cards = cards[:]
+        random.shuffle(selected_cards)
+
+    # Pool đáp án đúng để bù đáp án sai khi card không đủ option.
+    answer_pool = [
+        extract_card_correct_answer(card)
+        for card in cards
+        if extract_card_correct_answer(card)
+    ]
+
+    return [build_quiz_question(card, answer_pool) for card in selected_cards]
 
 
 @app.put("/api/decks/{deck_id}", response_model=DeckResponse)

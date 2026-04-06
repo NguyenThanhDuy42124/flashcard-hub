@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { decksAPI, cardsAPI } from '../api';
 import CreateCardModal from './CreateCardModal';
+import DeckQuizMode from './DeckQuizMode';
+import DeckQuickReviewMode from './DeckQuickReviewMode';
 
 // Mảng màu sắc Gradient cho mặt sau của thẻ
 const gradients = [
@@ -47,6 +49,8 @@ const CardBrowser = () => {
   const [editPosition, setEditPosition] = useState('');
   const [togglingAdd, setTogglingAdd] = useState(false);
   const [exportingFormat, setExportingFormat] = useState(null);
+  const [isDeckQuizMode, setIsDeckQuizMode] = useState(false);
+  const [isDeckQuickMode, setIsDeckQuickMode] = useState(false);
 
   // Giữ selection đồng bộ khi danh sách thẻ thay đổi
   useEffect(() => {
@@ -562,6 +566,18 @@ const CardBrowser = () => {
               </div>
               <div className="flex flex-wrap gap-2 justify-end w-full">
                 <button
+                  onClick={() => setIsDeckQuickMode(true)}
+                  className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-cyan-200 text-cyan-700 bg-cyan-50 hover:bg-cyan-100"
+                >
+                  ⚡ Xem nhanh
+                </button>
+                <button
+                  onClick={() => setIsDeckQuizMode(true)}
+                  className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                >
+                  🧠 Làm Quiz
+                </button>
+                <button
                   onClick={() => handleExportDeck('html')}
                   disabled={!!exportingFormat}
                   className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 ${exportingFormat ? 'opacity-60 cursor-wait' : ''}`}
@@ -765,7 +781,21 @@ const CardBrowser = () => {
       </div>
 
       {/* Main Content - Quiz layout vs Flashcard layout */}
-      {deck.tag === 'Quiz' ? (
+      {isDeckQuickMode ? (
+        <DeckQuickReviewMode
+          deckId={deckId}
+          deckTitle={deck.title}
+          chapters={chapters}
+          onExit={() => setIsDeckQuickMode(false)}
+        />
+      ) : isDeckQuizMode ? (
+        <DeckQuizMode
+          deckId={deckId}
+          deckTitle={deck.title}
+          chapters={chapters}
+          onExit={() => setIsDeckQuizMode(false)}
+        />
+      ) : deck.tag === 'Quiz' ? (
         <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
           {filteredCards.length === 0 ? (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
