@@ -65,6 +65,9 @@ const CardBrowser = () => {
   }, [cards]);
   const isAdmin = localStorage.getItem('flashcardAdmin') === 'true';
   const addingLocked = deck && deck.allow_card_additions === false && !isAdmin;
+  const normalizedTag = (deck?.tag || '').toLowerCase();
+  const showQuickModeAction = normalizedTag === 'flashcard' || normalizedTag === '';
+  const showQuizModeAction = normalizedTag === 'quiz' || normalizedTag === '';
 
   const deriveChapters = (cardList) => [
     'Tất cả',
@@ -565,18 +568,22 @@ const CardBrowser = () => {
                 </button>
               </div>
               <div className="flex flex-wrap gap-2 justify-end w-full">
-                <button
-                  onClick={() => setIsDeckQuickMode(true)}
-                  className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-slate-300 text-slate-700 bg-slate-100 hover:bg-slate-200"
-                >
-                  ⚡ Xem nhanh
-                </button>
-                <button
-                  onClick={() => setIsDeckQuizMode(true)}
-                  className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-stone-300 text-stone-700 bg-stone-100 hover:bg-stone-200"
-                >
-                  🧠 Làm Quiz
-                </button>
+                {showQuickModeAction && (
+                  <button
+                    onClick={() => setIsDeckQuickMode(true)}
+                    className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-slate-300 text-slate-700 bg-slate-100 hover:bg-slate-200"
+                  >
+                    ⚡ Xem nhanh
+                  </button>
+                )}
+                {showQuizModeAction && (
+                  <button
+                    onClick={() => setIsDeckQuizMode(true)}
+                    className="px-3 sm:px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap border border-stone-300 text-stone-700 bg-stone-100 hover:bg-stone-200"
+                  >
+                    🧠 Làm Quiz
+                  </button>
+                )}
                 <button
                   onClick={() => handleExportDeck('html')}
                   disabled={!!exportingFormat}
