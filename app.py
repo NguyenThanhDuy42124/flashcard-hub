@@ -12,6 +12,7 @@ Pterodactyl auto-installs requirements.txt, then runs this file.
 import subprocess
 import sys
 import os
+from pathlib import Path
 
 # Add backend to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend"))
@@ -21,13 +22,9 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 if os.path.isdir(os.path.join(project_root, ".git")):
     print("==> Syncing code from GitHub...")
     try:
-        # Try git pull first
-        result = subprocess.run(["git", "pull", "origin", "main"], cwd=project_root, timeout=30, capture_output=True, text=True)
-        if result.returncode != 0:
-            print(f"Git pull warning: {result.stderr}")
-            # Fall back to fetch + reset
-            subprocess.run(["git", "fetch", "origin", "main"], cwd=project_root, timeout=30, check=True)
-            subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=project_root, timeout=30, check=True)
+        # Always force-sync to remote head to avoid divergent-branch pull errors.
+        subprocess.run(["git", "fetch", "origin", "main"], cwd=project_root, timeout=30, check=True)
+        subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=project_root, timeout=30, check=True)
         print("✅ Code synced successfully!")
         print(f"Current commit: {subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=project_root, capture_output=True, text=True).stdout.strip()}")
     except Exception as e:
@@ -36,8 +33,27 @@ if os.path.isdir(os.path.join(project_root, ".git")):
 # Initialize database before starting server
 try:
     import models  # noqa: F401
-    from database import Base, engine
+    from database import Base, engine, DATABASE_URL
+    from sqlalchemy import text
     Base.metadata.create_all(bind=engine)
+    print(f"📁 DATABASE_URL: {DATABASE_URL}")
+
+    if DATABASE_URL.startswith("sqlite:///"):
+        sqlite_path = DATABASE_URL.replace("sqlite:///", "", 1)
+        db_file = Path(sqlite_path)
+        if db_file.exists():
+            print(f"📦 SQLite file: {db_file} ({db_file.stat().st_size} bytes)")
+        else:
+            print(f"⚠️ SQLite file not found at: {db_file}")
+
+    try:
+        with engine.connect() as conn:
+            deck_count = conn.execute(text("SELECT COUNT(*) FROM decks")).scalar() or 0
+            card_count = conn.execute(text("SELECT COUNT(*) FROM cards")).scalar() or 0
+            print(f"📊 DB snapshot: decks={deck_count}, cards={card_count}")
+    except Exception as count_error:
+        print(f"⚠️ Cannot read DB snapshot yet: {count_error}")
+
     print("✅ Database initialized successfully")
 except Exception as e:
     print(f"⚠️  Database initialization: {e}")
