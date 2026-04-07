@@ -1,13 +1,30 @@
 """Database configuration and connection."""
 import os
+import shutil
 from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Get database URL from environment or use SQLite
-# Store database in project root
-db_path = Path(__file__).parent.parent / "flashcard_hub.db"
+# Prefer persistent SQLite path and migrate legacy DB files if needed.
+project_root = Path(__file__).resolve().parent.parent
+running_in_container = str(project_root).startswith("/home/container")
+default_data_dir = Path("/home/container/data") if running_in_container else project_root / "data"
+default_data_dir.mkdir(parents=True, exist_ok=True)
+
+db_path = Path(os.getenv("FLASHCARD_DB_PATH", str(default_data_dir / "flashcard_hub.db")))
+
+if not db_path.exists():
+    legacy_paths = [
+        project_root / "backend" / "flashcard_hub.db",
+        project_root / "flashcard_hub.db",
+    ]
+    for legacy_path in legacy_paths:
+        if legacy_path.exists() and legacy_path.resolve() != db_path.resolve():
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(legacy_path, db_path)
+            break
+
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     f"sqlite:///{db_path}"

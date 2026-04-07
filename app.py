@@ -35,6 +35,7 @@ if os.path.isdir(os.path.join(project_root, ".git")):
 
 # Initialize database before starting server
 try:
+    import models  # noqa: F401
     from database import Base, engine
     Base.metadata.create_all(bind=engine)
     print("✅ Database initialized successfully")

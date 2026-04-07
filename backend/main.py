@@ -33,7 +33,7 @@ except ImportError:
     logging_handler = logging.StreamHandler()
     has_rich = False
 
-from database import get_db, engine, Base, SessionLocal
+from database import get_db, engine, Base, SessionLocal, DATABASE_URL
 from models import User, Deck, Card, CardReview, StudySession
 from schemas import (
     CardCreate, CardResponse, DeckCreate, DeckUpdate, DeckResponse,
@@ -76,9 +76,18 @@ try:
     from sqlalchemy import text, inspect
     
     def ensure_card_columns_exist():
-        """Ensure cards and decks tables have required columns."""
+        """Ensure cards and decks tables exist and have required columns."""
         try:
             inspector = inspect(engine)
+            missing_tables = [
+                table_name for table_name in ("cards", "decks")
+                if not inspector.has_table(table_name)
+            ]
+            if missing_tables:
+                logger.warning(f"⚠️ Missing tables detected: {', '.join(missing_tables)}. Creating schema...")
+                Base.metadata.create_all(bind=engine)
+                inspector = inspect(engine)
+
             card_columns = [col['name'] for col in inspector.get_columns('cards')]
             deck_columns = [col['name'] for col in inspector.get_columns('decks')]
             
@@ -126,15 +135,15 @@ try:
     def run_migrations():
         """Run Alembic migrations automatically on startup."""
         try:
-            db_url = os.getenv("DATABASE_URL", f"sqlite:///{Path(__file__).parent.parent / 'flashcard_hub.db'}")
             alembic_config = Config(str(Path(__file__).parent / "alembic.ini"))
-            alembic_config.set_main_option("sqlalchemy.url", db_url)
+            alembic_config.set_main_option("sqlalchemy.url", DATABASE_URL)
             alembic_upgrade(alembic_config, "head")
             logger.info("✅ Database migrations completed")
             ensure_card_columns_exist()
         except Exception as e:
             logger.error(f"❌ Migration error: {e}")
-            logger.info("🔧 Attempting column verification as fallback")
+            logger.info("🔧 Creating tables and attempting column verification as fallback")
+            Base.metadata.create_all(bind=engine)
             ensure_card_columns_exist()
     
     def seed_sample_data():
