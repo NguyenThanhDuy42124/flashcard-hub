@@ -1,11 +1,11 @@
-# Flashcard Hub Backend - FastAPI + SQLite
+# Flashcard Hub Backend - FastAPI + MySQL/SQLite
 
-FastAPI backend for the Flashcard Hub learning platform using SQLite database.
+FastAPI backend for the Flashcard Hub learning platform using MySQL or SQLite.
 
 ## ✨ Features
 
 - 🚀 FastAPI with automatic API documentation
-- 📦 SQLite database (no external dependencies)
+- 📦 MySQL via env config (with SQLite fallback)
 - 🧠 Spaced Repetition System (SuperMemo-2)
 - 📤 HTML parser for importing flashcards
 - 👤 User authentication & progress tracking
@@ -62,15 +62,29 @@ gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app
 
 ## Database
 
-- **Type**: SQLite
-- **File**: `flashcard_hub.db` (auto-created)
-- **Location**: Backend directory
-- **No setup needed** - tables created automatically on startup
+- **Preferred**: MySQL (`mysql+pymysql`)
+- **Fallback**: SQLite file when MySQL env is not configured
+
+### MySQL quick setup (recommended)
+
+1. Copy `backend/.env.mysql.example` -> `backend/.env.mysql`
+2. Fill your real values:
+	- `MYSQL_ENDPOINT` (example `103.228.36.238:3307`)
+	- `MYSQL_DATABASE`
+	- `MYSQL_USER`
+	- `MYSQL_PASSWORD`
+3. Start backend normally (`python app.py` or `uvicorn main:app ...`)
+
+`backend/database.py` will auto-load `backend/.env.mysql` and build `DATABASE_URL`.
 
 ## Environment Variables
 
 ```bash
-DATABASE_URL=sqlite:///./flashcard_hub.db  # Custom DB location
+DATABASE_URL=mysql+pymysql://user:pass@127.0.0.1:3306/flashcard_hub?charset=utf8mb4
+MYSQL_ENDPOINT=127.0.0.1:3306
+MYSQL_DATABASE=flashcard_hub
+MYSQL_USER=root
+MYSQL_PASSWORD=your_password
 HOST=0.0.0.0                               # Server host
 PORT=8000                                  # Server port
 RELOAD=True                                # Auto-reload on code changes

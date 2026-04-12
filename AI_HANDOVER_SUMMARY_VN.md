@@ -100,3 +100,44 @@ Su dung nguyen van doan duoi de giu dung gu lam viec:
   - Da run build frontend thanh cong.
 - Commit da tao va da push:
   - `66257ab` - `feat: add quiz mode for deck and quick flashcard review`
+
+## 10) Log cap nhat moi nhat (Chuyen doi MySQL + file env mau)
+- Da cap nhat he thong ket noi DB de uu tien MySQL qua file env rieng:
+  - Chinh sua `backend/database.py`:
+    - Tu dong nap cac file env (`.env`, `.env.mysql`, `backend/.env`, `backend/.env.mysql`).
+    - Ho tro ghep `DATABASE_URL` tu bo bien tach roi:
+      - `MYSQL_ENDPOINT` (hoac `MYSQL_HOST` + `MYSQL_PORT`)
+      - `MYSQL_DATABASE`
+      - `MYSQL_USER`
+      - `MYSQL_PASSWORD`
+      - `MYSQL_CHARSET` (mac dinh `utf8mb4`)
+    - Uu tien MySQL split env vars truoc `DATABASE_URL` co san, tranh bi `.env` SQLite de.
+- Da them file mau de nguoi dung tu dien thong tin ket noi:
+  - `backend/.env.mysql.example`
+  - Mau co san endpoint/user/password/database de copy nhanh.
+- Da bo sung dependency MySQL driver:
+  - `requirements.txt`: them `PyMySQL==1.1.1`
+  - `requirements-prod.txt`: them `PyMySQL>=1.1.1`
+  - `backend/requirements-prod.txt`: them `PyMySQL==1.1.1`
+- Da cap nhat tai lieu huong dan su dung MySQL:
+  - `README.md`
+  - `DEVELOPMENT.md`
+  - `backend/README.md`
+- Da cap nhat bo qua file bi mat local:
+  - `.gitignore`: them `.env.mysql`, `.env.mysql.local`
+- Da verify ky thuat sau khi sua:
+  - Tao file local `backend/.env.mysql` de test ket noi that.
+  - Run snippet Python import `backend/database.py`:
+    - Ket qua `DATABASE_URL` da la `mysql+pymysql://...@103.228.36.238:3307/s167486_Flashcard?charset=utf8mb4`
+    - `IS_MYSQL=True`
+  - Build frontend thanh cong: `cd frontend && npm run build`
+  - Check loi workspace: khong co loi (`No errors found`).
+
+## 11) Ghi chu van hanh tiep theo
+- Neu chay local theo MySQL:
+  1. Copy `backend/.env.mysql.example` thanh `backend/.env.mysql`
+  2. Dien thong tin ket noi that
+  3. Chay backend nhu cu (`python app.py` / `uvicorn main:app --reload`)
+- Luu y bao mat:
+  - Khong commit `backend/.env.mysql` len git.
+  - Neu can chia se config, chi chia se file `.example` va an password.

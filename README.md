@@ -25,7 +25,7 @@ A comprehensive web application for creating, uploading, and studying interactiv
 | Layer | Technology |
 |-------|-----------|
 | **Backend** | Python 3.10 + FastAPI |
-| **Database** | SQLite (built-in, no setup needed) |
+| **Database** | MySQL 8 (recommended) / SQLite fallback |
 | **Frontend** | React 19 + React Router + Tailwind CSS |
 | **Algorithm** | SuperMemo-2 (Spaced Repetition) |
 
@@ -73,7 +73,7 @@ flashcard-hub/
 ### Prerequisites
 - Python 3.10+
 - Node.js 18+
-- (No database server needed - SQLite is included)
+- MySQL server (recommended), or use SQLite fallback
 
 ### 1️⃣ Windows - Easy Start
 
@@ -127,6 +127,10 @@ python -m venv ../venv
 
 # Install dependencies
 pip install -r requirements.txt
+
+# MySQL config (recommended)
+# Copy backend/.env.mysql.example to backend/.env.mysql
+# then edit MYSQL_ENDPOINT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD
 
 # Start server (port 8000)
 python app.py

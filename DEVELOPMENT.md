@@ -21,10 +21,14 @@ cd backend
 python -m venv ../venv
 ../venv/Scripts/activate  # Windows
 pip install -r requirements.txt
+
+# MySQL config (recommended)
+# copy .env.mysql.example to .env.mysql and fill your endpoint/user/password/database
+
 python app.py
 ```
 
-✅ **No database setup needed!** SQLite database is created automatically.
+✅ **MySQL preferred** (auto-read from `backend/.env.mysql`), SQLite fallback if not configured.
 
 ### Step 2: Frontend Setup
 ```bash
@@ -42,7 +46,7 @@ npm start
 - **models.py** - Database models (User, Deck, Card, etc.)
 - **parser.py** - HTML parsing logic
 - **srs_engine.py** - Spaced repetition algorithm
-- **database.py** - SQLite connection setup
+- **database.py** - MySQL/SQLite connection setup
 
 ### Frontend
 - **App.js** - Main router and navigation
@@ -115,11 +119,10 @@ curl -X POST http://localhost:8000/api/decks/create \
 
 ## 📊 Database
 
-- **Type**: SQLite
-- **File**: `flashcard_hub.db`
-- **Location**: `backend/` directory
+- **Type**: MySQL (recommended), SQLite fallback
+- **MySQL config file**: `backend/.env.mysql`
+- **Template**: `backend/.env.mysql.example`
 - **Tables**: users, decks, cards, study_sessions, card_reviews
-- **Auto-created** on first run of `python app.py`
 
 ## 🎯 Next Steps
 

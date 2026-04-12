@@ -3,6 +3,9 @@ import os
 import shutil
 import sqlite3
 from pathlib import Path
+from urllib.parse import quote_plus
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -13,7 +16,45 @@ running_in_container = str(project_root).startswith("/home/container")
 default_data_dir = Path("/home/container/data") if running_in_container else project_root / "data"
 default_data_dir.mkdir(parents=True, exist_ok=True)
 
+# Load optional env files (non-overriding) so users can keep DB secrets outside code.
+for env_file in (
+    project_root / ".env",
+    project_root / ".env.mysql",
+    project_root / "backend" / ".env",
+    project_root / "backend" / ".env.mysql",
+):
+    if env_file.exists():
+        load_dotenv(env_file, override=False)
+
 db_path = Path(os.getenv("FLASHCARD_DB_PATH", str(default_data_dir / "flashcard_hub.db")))
+
+
+def _build_mysql_url_from_env() -> str | None:
+    """Build MySQL DATABASE_URL from split environment variables when provided."""
+    endpoint = os.getenv("MYSQL_ENDPOINT", "").strip()
+    host = os.getenv("MYSQL_HOST", "").strip()
+    port = os.getenv("MYSQL_PORT", "").strip()
+
+    if endpoint and not host:
+        if ":" in endpoint:
+            host, endpoint_port = endpoint.rsplit(":", 1)
+            port = port or endpoint_port
+        else:
+            host = endpoint
+
+    database = os.getenv("MYSQL_DATABASE", "").strip()
+    user = os.getenv("MYSQL_USER", "").strip()
+    password = os.getenv("MYSQL_PASSWORD", "").strip()
+
+    if not (host and database and user and password):
+        return None
+
+    port = port or "3306"
+    charset = os.getenv("MYSQL_CHARSET", "utf8mb4").strip() or "utf8mb4"
+    return (
+        f"mysql+pymysql://{quote_plus(user)}:{quote_plus(password)}"
+        f"@{host}:{port}/{database}?charset={charset}"
+    )
 
 
 def _read_sqlite_stats(path: Path):
@@ -57,8 +98,13 @@ def _pick_best_sqlite_file(candidates):
             best_score = score
     return best_path, best_score
 
-# If DATABASE_URL is not explicitly set, auto-select the best local SQLite snapshot.
-if not os.getenv("DATABASE_URL"):
+# Resolve DATABASE_URL priority:
+# 1) MySQL split env vars (MYSQL_ENDPOINT/HOST/PORT/USER/PASSWORD/DATABASE)
+# 2) Explicit DATABASE_URL
+# 3) Auto-selected local SQLite snapshot
+resolved_database_url = _build_mysql_url_from_env() or os.getenv("DATABASE_URL")
+
+if not resolved_database_url:
     legacy_paths = [
         db_path,
         project_root / "backend" / "flashcard_hub.db",
@@ -91,10 +137,9 @@ if not os.getenv("DATABASE_URL"):
             shutil.copy2(db_path, backup_path)
         shutil.copy2(best_path, db_path)
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    f"sqlite:///{db_path}"
-)
+    resolved_database_url = f"sqlite:///{db_path}"
+
+DATABASE_URL = resolved_database_url
 
 # Create engine - SQLite specific settings
 if DATABASE_URL.startswith("sqlite"):
