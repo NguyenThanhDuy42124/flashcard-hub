@@ -2,7 +2,7 @@
 Flashcard Hub – Entry point for Pterodactyl Python Egg hosting.
 
 This script:
-1. Syncs code from GitHub (git fetch + reset --hard)
+1. Optionally syncs code from GitHub (opt-in)
 2. Installs Python dependencies from requirements.txt
 3. Initializes database
 4. Starts the FastAPI server via uvicorn
@@ -17,18 +17,28 @@ from pathlib import Path
 # Add backend to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend"))
 
-# ── Force sync with GitHub (fixes Pterodactyl git pull conflicts) ──
 project_root = os.path.dirname(os.path.abspath(__file__))
-if os.path.isdir(os.path.join(project_root, ".git")):
-    print("==> Syncing code from GitHub...")
+
+
+def _should_sync_code() -> bool:
+    """Enable in-app git sync only when explicitly requested by environment."""
+    raw = os.getenv("AUTO_UPDATE_IN_APP", "0").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+if os.path.isdir(os.path.join(project_root, ".git")) and _should_sync_code():
+    print("==> Syncing code from GitHub (AUTO_UPDATE_IN_APP=1)...")
     try:
-        # Always force-sync to remote head to avoid divergent-branch pull errors.
-        subprocess.run(["git", "fetch", "origin", "main"], cwd=project_root, timeout=30, check=True)
-        subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=project_root, timeout=30, check=True)
+        subprocess.run(["git", "pull", "--ff-only", "origin", "main"], cwd=project_root, timeout=30, check=True)
         print("✅ Code synced successfully!")
-        print(f"Current commit: {subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=project_root, capture_output=True, text=True).stdout.strip()}")
+        print(
+            "Current commit: "
+            f"{subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=project_root, capture_output=True, text=True).stdout.strip()}"
+        )
     except Exception as e:
         print(f"❌ Git sync failed: {e}")
+else:
+    print("ℹ️ Skip in-app git sync (managed by panel or AUTO_UPDATE_IN_APP=0)")
 
 # Initialize database before starting server
 try:

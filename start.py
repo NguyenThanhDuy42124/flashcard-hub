@@ -5,8 +5,6 @@ Initializes and starts the FastAPI backend server with automatic database setup.
 """
 import os
 import sys
-import subprocess
-import platform
 from pathlib import Path
 
 # Add backend to path
@@ -25,17 +23,6 @@ def check_dependencies():
         print(f"❌ Missing dependency: {e}")
         print("Please run: pip install -r requirements.txt")
         return False
-
-def setup_environment():
-    """Setup environment variables."""
-    env_file = Path(__file__).parent / ".env"
-    if not env_file.exists():
-        print("📝 Creating .env file with defaults...")
-        with open(env_file, 'w') as f:
-            f.write("HOST=0.0.0.0\n")
-            f.write("PORT=8000\n")
-            f.write("RELOAD=True\n")
-            f.write("DATABASE_URL=sqlite:///./flashcard.db\n")
 
 def start_backend():
     """Start the FastAPI backend server."""
@@ -72,10 +59,7 @@ def main():
     # Check dependencies
     if not check_dependencies():
         sys.exit(1)
-    
-    # Setup environment
-    setup_environment()
-    
+
     # Start backend
     start_backend()
 
