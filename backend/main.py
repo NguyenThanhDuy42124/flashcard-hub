@@ -136,7 +136,8 @@ try:
         """Run Alembic migrations automatically on startup."""
         try:
             alembic_config = Config(str(Path(__file__).parent / "alembic.ini"))
-            alembic_config.set_main_option("sqlalchemy.url", DATABASE_URL)
+            # Alembic uses ConfigParser interpolation, so '%' in URL must be escaped.
+            alembic_config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
             alembic_upgrade(alembic_config, "head")
             logger.info("✅ Database migrations completed")
             ensure_card_columns_exist()

@@ -39,28 +39,28 @@ def setup_environment():
 
 def start_backend():
     """Start the FastAPI backend server."""
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("SERVER_PORT") or os.getenv("PORT", "8000"))
+
     print("\n" + "="*60)
     print("🚀 Starting Flashcard Hub Backend")
     print("="*60)
-    print("📖 API Docs: http://localhost:8000/docs")
-    print("📊 ReDoc: http://localhost:8000/redoc")
+    print(f"📖 API Docs: http://localhost:{port}/docs")
+    print(f"📊 ReDoc: http://localhost:{port}/redoc")
     print("="*60 + "\n")
     
     os.chdir(str(Path(__file__).parent / "backend"))
     
     try:
-        from app import app
         import uvicorn
-        
-        host = os.getenv("HOST", "0.0.0.0")
-        port = int(os.getenv("PORT", "8000"))
-        relload = os.getenv("RELOAD", "True").lower() == "true"
-        
+
+        reload_enabled = os.getenv("RELOAD", "False").lower() == "true"
+
         uvicorn.run(
-            "app:app",
+            "main:app",
             host=host,
             port=port,
-            reload=relload,
+            reload=reload_enabled,
             log_level="info"
         )
     except Exception as e:

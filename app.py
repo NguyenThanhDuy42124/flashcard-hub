@@ -59,7 +59,7 @@ except Exception as e:
     print(f"⚠️  Database initialization: {e}")
 
 # Get port from environment (Pterodactyl sets SERVER_PORT)
-port = "25297"
+port = str(os.getenv("SERVER_PORT") or os.getenv("PORT") or "8000")
 
 # Change to backend directory for proper imports
 os.chdir(os.path.join(project_root, "backend"))
@@ -109,10 +109,11 @@ with open(log_config_path, "w") as f:
 
 # Start FastAPI server
 print(f"🚀 Starting Flashcard Hub API on port {port}...")
-subprocess.call([
+exit_code = subprocess.call([
     sys.executable, "-m", "uvicorn",
     "main:app",
     "--host", "0.0.0.0",
     "--port", str(port),
     "--log-config", log_config_path
 ])
+sys.exit(exit_code)
